@@ -15,6 +15,7 @@
     "build:all": "npm run build:contracts && npm run build:api && npm run build:web",
     "typecheck": "npm --workspace=@seethapaati/contracts run typecheck && npm --workspace=@seethapaati/api run typecheck && npm --workspace=@seethapaati/web run typecheck",
     "test": "npm --workspace=@seethapaati/api run test",
+    "test:deployment": "node scripts/test-deployment.js",
     "lint": "npm --workspace=@seethapaati/api run lint && npm --workspace=@seethapaati/web run lint",
     "start:api": "npm --workspace=@seethapaati/api run start:prod",
     "start:web": "npm --workspace=@seethapaati/web run start",
