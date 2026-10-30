@@ -155,7 +155,7 @@ export function HomeClient({ initialProducts = [] }: HomeClientProps) {
           </span>
         </div>
         <a className="home-hero__scroll" href="#collection">
-          <span>Scroll to explore</span>
+          <span>View the collection</span>
           <span className="scroll-line" />
         </a>
       </section>

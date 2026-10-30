@@ -53,3 +53,13 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# PostgreSQL local data directory (never commit raw DB files)
+pgdata/
+*.pid
+
+# Docker volumes
+postgres-data/
+
+# Scratch files
+customer_cookie.txt

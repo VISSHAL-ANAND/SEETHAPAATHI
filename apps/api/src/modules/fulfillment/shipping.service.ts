@@ -30,6 +30,35 @@ export interface TrackingCheckpoint {
   location?: string | null;
 }
 
+export interface ServiceabilityResult {
+  serviceable: boolean;
+  couriers: Array<{
+    courier_name: string;
+    estimated_delivery_days: number | null;
+    freight_charge: number;
+    cod_charges: number;
+    rating: number;
+  }>;
+  estimatedDays: number | null;
+}
+
+/** Shiprocket JWT token cache record */
+interface ShiprocketTokenCache {
+  token: string;
+  expiresAt: number; // Unix ms
+}
+
+/** In-memory fallback when Redis is unavailable in dev */
+const _inMemoryTokenCache = new Map<string, ShiprocketTokenCache>();
+
+/**
+ * Shiprocket token TTL:
+ *   Official validity: 10 days (864,000 seconds / 240 hours)
+ *   We cache for 8 days (691,200 seconds) to ensure a proactive refresh window.
+ */
+const SHIPROCKET_TOKEN_TTL_SECONDS = 8 * 24 * 60 * 60; // 8 days
+const SHIPROCKET_TOKEN_REDIS_KEY = 'shiprocket:jwt_token';
+
 @Injectable()
 export class ShippingService {
   private readonly logger = new Logger(ShippingService.name);
@@ -266,8 +295,14 @@ export class ShippingService {
   }
 
   /**
-   * 2. Shiprocket Integration
-   * Automatically pushes a paid order to Shiprocket when credentials exist.
+   * 2. Shiprocket Integration — Idempotent Order Push
+   *
+   * Guard conditions (ALL must pass):
+   *   a. order.status === PAID
+   *   b. order.shiprocketOrderId IS NULL (not yet pushed)
+   *   c. Redis SET NX distributed lock prevents concurrent duplicate pushes
+   *
+   * On 401 from Shiprocket API: clears cached token and retries auth once.
    */
   async pushOrderToShiprocket(orderId: string): Promise<{ success: boolean; shiprocketOrderId?: number; message?: string }> {
     const email = this.config.get<string>('SHIPROCKET_EMAIL');
@@ -279,6 +314,7 @@ export class ShippingService {
     }
 
     try {
+      // IDEMPOTENCY GUARD 1: Check DB — if shiprocketOrderId already set, skip
       const order = await this.prisma.order.findUnique({
         where: { id: orderId },
         include: { items: true, user: true },
@@ -286,6 +322,48 @@ export class ShippingService {
 
       if (!order) return { success: false, message: 'Order not found' };
 
+      // Only push PAID orders
+      if (order.status !== OrderStatus.PAID) {
+        this.logger.warn(`pushOrderToShiprocket: Order ${orderId} is in status ${order.status}, not PAID. Skipping.`);
+        return { success: false, message: `Order status ${order.status} is not eligible for Shiprocket push` };
+      }
+
+      // IDEMPOTENCY GUARD 2: Check if shiprocketOrderId already exists on the order record
+      // (requires the `shiprocketOrderId` field on the Order model — see prisma schema)
+      if ((order as any).shiprocketOrderId) {
+        this.logger.log(`Order ${order.orderNumber} already has Shiprocket ID ${(order as any).shiprocketOrderId}. Skipping duplicate push.`);
+        return { success: true, shiprocketOrderId: (order as any).shiprocketOrderId, message: 'Already pushed' };
+      }
+
+      // IDEMPOTENCY GUARD 3: Redis distributed lock (SET NX) to prevent concurrent duplicate calls
+      const lockKey = `shiprocket:push:lock:${orderId}`;
+      const lockTtl = 5 * 60; // 5 minutes
+      let lockAcquired = false;
+      try {
+        if (this.redis.isReady()) {
+          const client = this.redis.getClient();
+          if (client) {
+            const result = await client.set(lockKey, '1', 'EX', lockTtl, 'NX');
+            lockAcquired = result === 'OK';
+          }
+        } else {
+          // Dev fallback: use in-memory check
+          if (!_inMemoryTokenCache.has(lockKey)) {
+            _inMemoryTokenCache.set(lockKey, { token: '1', expiresAt: Date.now() + lockTtl * 1000 });
+            lockAcquired = true;
+          }
+        }
+      } catch (lockErr) {
+        this.logger.warn(`Shiprocket lock acquisition failed (non-fatal): ${(lockErr as Error).message}`);
+        lockAcquired = true; // Proceed if lock system is unavailable — DB guard is the backstop
+      }
+
+      if (!lockAcquired) {
+        this.logger.warn(`Shiprocket push lock held for order ${orderId}. Concurrent call skipped.`);
+        return { success: false, message: 'Push already in progress for this order' };
+      }
+
+      // Authenticate and get cached JWT
       const token = await this.getShiprocketToken(email, password);
       if (!token) return { success: false, message: 'Unable to authenticate with Shiprocket' };
 
@@ -326,24 +404,30 @@ export class ShippingService {
         ).toFixed(2),
       };
 
-      const response = await fetch('https://apiv2.shiprocket.in/v1/external/orders/create/adhoc', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const result = await this.callShiprocketCreateOrder(token, payload, email, password);
 
-      const data = await response.json();
-
-      if (data?.order_id) {
-        this.logger.log(`Order ${order.orderNumber} successfully pushed to Shiprocket (ID: ${data.order_id})`);
-        return { success: true, shiprocketOrderId: data.order_id };
+      // Release lock on completion
+      try {
+        await this.redis.del(lockKey);
+      } catch {
+        _inMemoryTokenCache.delete(lockKey);
       }
 
-      this.logger.warn(`Shiprocket order creation returned unexpected payload: ${JSON.stringify(data)}`);
-      return { success: false, message: data?.message || 'Shiprocket order creation failed' };
+      if (result.success && result.shiprocketOrderId) {
+        // Persist shiprocketOrderId on the order for permanent idempotency
+        try {
+          await this.prisma.order.update({
+            where: { id: orderId },
+            data: { shiprocketOrderId: String(result.shiprocketOrderId) } as any,
+          });
+        } catch (updateErr) {
+          // Non-fatal: field may not exist in schema yet — log and continue
+          this.logger.warn(`Could not persist shiprocketOrderId on order ${orderId}: ${(updateErr as Error).message}`);
+        }
+        this.logger.log(`Order ${order.orderNumber} successfully pushed to Shiprocket (ID: ${result.shiprocketOrderId})`);
+      }
+
+      return result;
     } catch (err) {
       this.logger.error(`Failed to push order to Shiprocket: ${(err as Error).message}`);
       return { success: false, message: (err as Error).message };
@@ -351,11 +435,163 @@ export class ShippingService {
   }
 
   /**
-   * Shiprocket Webhook Handler
-   * Receives live tracking updates from Shiprocket tracking webhook.
+   * Internal: call Shiprocket create/adhoc with 401 token refresh retry.
    */
-  async processShippingWebhook(payload: any): Promise<{ success: boolean; message: string }> {
+  private async callShiprocketCreateOrder(
+    token: string,
+    payload: Record<string, any>,
+    email: string,
+    password: string,
+    retried = false,
+  ): Promise<{ success: boolean; shiprocketOrderId?: number; message?: string }> {
+    const response = await fetch('https://apiv2.shiprocket.in/v1/external/orders/create/adhoc', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // 401: token expired — refresh and retry once
+    if (response.status === 401 && !retried) {
+      this.logger.warn('Shiprocket returned 401. Refreshing token and retrying...');
+      await this.clearShiprocketToken();
+      const freshToken = await this.getShiprocketToken(email, password, true);
+      if (!freshToken) return { success: false, message: 'Shiprocket token refresh failed' };
+      return this.callShiprocketCreateOrder(freshToken, payload, email, password, true);
+    }
+
+    const data = await response.json();
+
+    if (data?.order_id) {
+      return { success: true, shiprocketOrderId: data.order_id };
+    }
+
+    this.logger.warn(`Shiprocket order creation returned unexpected payload: ${JSON.stringify(data)}`);
+    return { success: false, message: data?.message || 'Shiprocket order creation failed' };
+  }
+
+  /**
+   * 3. Pincode Serviceability Check
+   * Checks if delivery to a pincode is possible and returns courier options.
+   * Results cached in Redis for 6 hours to reduce API calls.
+   */
+  async checkServiceability(
+    deliveryPincode: string,
+    weightGrams = 500,
+  ): Promise<ServiceabilityResult> {
+    const email = this.config.get<string>('SHIPROCKET_EMAIL');
+    const password = this.config.get<string>('SHIPROCKET_PASSWORD');
+    const pickupPostcode = this.config.get<string>('SHIPROCKET_PICKUP_POSTCODE', '600004');
+
+    // Validate pincode format
+    if (!/^\d{6}$/.test(deliveryPincode)) {
+      throw new BadRequestException({ error: 'INVALID_PINCODE', message: 'Pincode must be a 6-digit number' });
+    }
+
+    // Cache lookup (6 hour TTL)
+    const cacheKey = `sr:serviceability:${deliveryPincode}:${weightGrams}`;
     try {
+      const cached = await this.redis.getJson<ServiceabilityResult>(cacheKey);
+      if (cached) {
+        this.logger.debug(`Serviceability cache hit: ${cacheKey}`);
+        return cached;
+      }
+    } catch {
+      // Non-fatal cache miss
+    }
+
+    // If Shiprocket not configured, return serviceable with no courier details
+    if (!email || !password) {
+      const fallback: ServiceabilityResult = {
+        serviceable: true,
+        couriers: [],
+        estimatedDays: 5,
+      };
+      return fallback;
+    }
+
+    try {
+      const token = await this.getShiprocketToken(email, password);
+      if (!token) {
+        return { serviceable: true, couriers: [], estimatedDays: 5 };
+      }
+
+      const weightKg = (weightGrams / 1000).toFixed(2);
+      const url = new URL('https://apiv2.shiprocket.in/v1/external/courier/serviceability/');
+      url.searchParams.set('pickup_postcode', pickupPostcode);
+      url.searchParams.set('delivery_postcode', deliveryPincode);
+      url.searchParams.set('weight', weightKg);
+      url.searchParams.set('cod', '0');
+
+      const response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Handle 401 with token refresh
+      if (response.status === 401) {
+        await this.clearShiprocketToken();
+        const freshToken = await this.getShiprocketToken(email, password, true);
+        if (freshToken) {
+          const retryResponse = await fetch(url.toString(), {
+            headers: { Authorization: `Bearer ${freshToken}` },
+          });
+          const retryData = await retryResponse.json();
+          return this.parseServiceabilityResponse(retryData, cacheKey);
+        }
+      }
+
+      const data = await response.json();
+      return this.parseServiceabilityResponse(data, cacheKey);
+    } catch (err) {
+      this.logger.error(`Shiprocket serviceability check failed: ${(err as Error).message}`);
+      // Fail open — don't block checkout on courier API errors
+      return { serviceable: true, couriers: [], estimatedDays: 5 };
+    }
+  }
+
+  private async parseServiceabilityResponse(data: any, cacheKey: string): Promise<ServiceabilityResult> {
+    const available = data?.data?.available_courier_companies || [];
+    const result: ServiceabilityResult = {
+      serviceable: available.length > 0,
+      couriers: available.slice(0, 5).map((c: any) => ({
+        courier_name: c.courier_name || c.name,
+        estimated_delivery_days: c.estimated_delivery_days ?? null,
+        freight_charge: Number(c.freight_charge || 0),
+        cod_charges: Number(c.cod_charges || 0),
+        rating: Number(c.rating || 0),
+      })),
+      estimatedDays: available[0]?.estimated_delivery_days ?? null,
+    };
+
+    // Cache for 6 hours
+    try {
+      await this.redis.setJson(cacheKey, result, 6 * 60 * 60);
+    } catch {
+      // Non-fatal cache write failure
+    }
+
+    return result;
+  }
+
+  /**
+   * 4. Shiprocket Webhook Handler
+   * Receives live tracking updates from Shiprocket tracking webhook.
+   * Always returns 200 (Shiprocket retries on non-200).
+   */
+  async processShippingWebhook(
+    payload: any,
+    webhookToken?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Validate optional webhook token if configured
+      const configuredToken = this.config.get<string>('SHIPROCKET_WEBHOOK_TOKEN');
+      if (configuredToken && webhookToken !== configuredToken) {
+        this.logger.warn('Shiprocket webhook received with invalid token. Ignoring.');
+        return { success: false, message: 'Invalid webhook token' };
+      }
+
       this.logger.log(`Received shipping webhook: ${JSON.stringify(payload)}`);
 
       // Shiprocket sends order_id (our orderNumber) or awb
@@ -396,12 +632,14 @@ export class ShippingService {
         targetShipmentStatus = ShipmentStatus.DELIVERED;
       } else if (['RTO', 'CANCELLED', 'RETURNED'].some((s) => statusText.includes(s))) {
         targetShipmentStatus = ShipmentStatus.CANCELLED;
+      } else if (['AWB ASSIGNED', 'AWB_ASSIGNED', 'SHIPMENT CREATED'].some((s) => statusText.includes(s))) {
+        targetShipmentStatus = ShipmentStatus.AWB_ASSIGNED;
       }
 
       const now = new Date();
 
       await this.prisma.$transaction(async (tx) => {
-        let shipment = order.shipment;
+        let shipment = (order as any).shipment;
         if (!shipment) {
           shipment = await tx.shipment.create({
             data: {
@@ -483,7 +721,7 @@ export class ShippingService {
   }
 
   /**
-   * 3. Enhanced Order Tracking Timeline
+   * 5. Enhanced Order Tracking Timeline
    * Generates step-by-step progress checkpoints with dates and descriptions.
    */
   async track(orderId: string, userId?: string, readAll = false) {
@@ -604,10 +842,25 @@ export class ShippingService {
     ];
   }
 
-  private async getShiprocketToken(email: string, pass: string): Promise<string | null> {
-    const cacheKey = 'shiprocket:jwt_token';
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return cached;
+  /**
+   * Shiprocket JWT Authentication with Redis caching.
+   *
+   * Token validity: 10 days (240h). Cache TTL: 8 days (691,200s).
+   * On forceRefresh: skips cache and re-authenticates immediately.
+   */
+  private async getShiprocketToken(email: string, pass: string, forceRefresh = false): Promise<string | null> {
+    if (!forceRefresh) {
+      try {
+        const cached = await this.redis.get(SHIPROCKET_TOKEN_REDIS_KEY);
+        if (cached) return cached;
+      } catch {
+        // Check in-memory fallback
+        const memCached = _inMemoryTokenCache.get(SHIPROCKET_TOKEN_REDIS_KEY);
+        if (memCached && memCached.expiresAt > Date.now()) {
+          return memCached.token;
+        }
+      }
+    }
 
     try {
       const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
@@ -618,13 +871,34 @@ export class ShippingService {
 
       const data = await res.json();
       if (data?.token) {
-        // Cache token for 8 days (token is valid for 10)
-        await this.redis.set(cacheKey, data.token, 8 * 24 * 60 * 60);
+        // Cache for 8 days (token valid for 10 days — 240h)
+        try {
+          await this.redis.set(SHIPROCKET_TOKEN_REDIS_KEY, data.token, SHIPROCKET_TOKEN_TTL_SECONDS);
+        } catch {
+          // In-memory fallback
+          _inMemoryTokenCache.set(SHIPROCKET_TOKEN_REDIS_KEY, {
+            token: data.token,
+            expiresAt: Date.now() + SHIPROCKET_TOKEN_TTL_SECONDS * 1000,
+          });
+        }
         return data.token;
       }
+      this.logger.warn(`Shiprocket auth failed: ${JSON.stringify(data)}`);
       return null;
+    } catch (err) {
+      this.logger.error(`Shiprocket auth request failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Clear cached Shiprocket token (called on 401 responses).
+   */
+  private async clearShiprocketToken(): Promise<void> {
+    try {
+      await this.redis.del(SHIPROCKET_TOKEN_REDIS_KEY);
     } catch {
-      return null;
+      _inMemoryTokenCache.delete(SHIPROCKET_TOKEN_REDIS_KEY);
     }
   }
 

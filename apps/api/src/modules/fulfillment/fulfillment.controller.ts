@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   CreateShipmentRequestSchema,
@@ -111,13 +113,41 @@ export class FulfillmentController {
   }
 
   /**
+   * Delivery Pincode Serviceability Check
+   *
+   * @route GET /shipping/serviceability?pincode=600001&weight=500
+   * @param pincode - 6-digit delivery pincode
+   * @param weight  - package weight in grams (default: 500)
+   *
+   * Returns courier availability and estimated delivery days for the given pincode.
+   * Results are cached in Redis for 6 hours to minimize Shiprocket API calls.
+   */
+  @Public()
+  @SkipThrottle()
+  @Get('shipping/serviceability')
+  async serviceability(
+    @Query('pincode') pincode: string,
+    @Query('weight') weight?: string,
+  ) {
+    const weightGrams = weight ? parseInt(weight, 10) : 500;
+    const data = await this.shipping.checkServiceability(pincode, weightGrams);
+    return { success: true, data };
+  }
+
+  /**
    * Live Automated Shipping Webhook Endpoint (Shiprocket / Logistics Partners)
+   *
+   * Always returns HTTP 200 — Shiprocket retries on non-200 responses.
+   * Optional webhook token validation via X-Shiprocket-Token header.
    */
   @Public()
   @SkipThrottle()
   @Post('webhooks/shipping')
   @HttpCode(HttpStatus.OK)
-  async shippingWebhook(@Body() payload: any) {
-    return await this.shipping.processShippingWebhook(payload);
+  async shippingWebhook(
+    @Body() payload: any,
+    @Headers('x-shiprocket-token') webhookToken?: string,
+  ) {
+    return await this.shipping.processShippingWebhook(payload, webhookToken);
   }
 }

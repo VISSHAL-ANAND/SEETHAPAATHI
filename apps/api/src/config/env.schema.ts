@@ -28,6 +28,15 @@ export const EnvSchema = z
     RAZORPAY_KEY_SECRET: z.string().default('rzp_secret_placeholder'),
     RAZORPAY_WEBHOOK_SECRET: z.string().default('rzp_webhook_placeholder'),
     RESERVATION_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+
+    // Shiprocket Courier Integration (Optional — manual admin tracking works without these)
+    SHIPROCKET_EMAIL: z.string().optional(),
+    SHIPROCKET_PASSWORD: z.string().optional(),
+    SHIPROCKET_CHANNEL_ID: z.string().optional(),
+    SHIPROCKET_PICKUP_LOCATION: z.string().default('Primary'),
+    SHIPROCKET_PICKUP_POSTCODE: z.string().default('600004'),
+    SHIPROCKET_WEBHOOK_TOKEN: z.string().optional(),
+
     RESEND_API_KEY: z.string().optional(),
     EMAIL_FROM: z.string().email().default('onboarding@resend.dev'),
     AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
