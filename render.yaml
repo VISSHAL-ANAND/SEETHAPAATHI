@@ -23,16 +23,14 @@ services:
         fromDatabase:
           name: seethapaati-postgres
           property: connectionString
+      - key: REDIS_URL
+        sync: false
       - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: seethapaati-redis
-          property: host
+        sync: false
       - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: seethapaati-redis
-          property: port
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: JWT_SECRET

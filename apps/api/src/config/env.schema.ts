@@ -17,10 +17,22 @@ export const EnvSchema = z
     NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
     PORT: z.coerce.number().default(4000),
     DATABASE_URL: z.string().default('postgresql://postgres:postgres@localhost:5432/seethapaati_dev?schema=public'),
-    REDIS_URL: z.string().optional(),
-    REDIS_HOST: z.string().default('localhost'),
-    REDIS_PORT: z.coerce.number().default(6379),
-    REDIS_PASSWORD: z.string().optional(),
+    REDIS_URL: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined),
+      z.string().optional(),
+    ),
+    REDIS_HOST: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined),
+      z.string().optional(),
+    ),
+    REDIS_PORT: z.preprocess(
+      (val) => (val !== undefined && val !== '' ? Number(val) : undefined),
+      z.coerce.number().optional(),
+    ),
+    REDIS_PASSWORD: z.preprocess(
+      (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined),
+      z.string().optional(),
+    ),
     JWT_SECRET: z.string().min(16).default('development_jwt_secret_must_be_changed_in_prod'),
     JWT_EXPIRES_IN: z.string().default('7d'),
     CORS_ORIGIN: z.string().default('http://localhost:3000'),
@@ -45,6 +57,33 @@ export const EnvSchema = z
     SELLER_STATE: z.string().min(1).default('Tamil Nadu'),
     SELLER_STATE_CODE: z.string().regex(/^\d{2}$/, 'State code must be 2 digits').default('33'),
     SELLER_PINCODE: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits').default('600004'),
+  })
+  .transform((data) => {
+    // If REDIS_URL is provided, automatically extract host, port, and password
+    if (data.REDIS_URL) {
+      try {
+        const parsed = new URL(data.REDIS_URL);
+        if (!data.REDIS_HOST) {
+          data.REDIS_HOST = parsed.hostname;
+        }
+        if (!data.REDIS_PORT) {
+          data.REDIS_PORT = parsed.port ? parseInt(parsed.port, 10) : 6379;
+        }
+        if (!data.REDIS_PASSWORD && parsed.password) {
+          data.REDIS_PASSWORD = decodeURIComponent(parsed.password);
+        }
+      } catch {
+        // Fallback for non-standard Redis URLs
+      }
+    }
+    // If REDIS_URL is not provided and host/port are not explicit, apply local development defaults
+    if (!data.REDIS_HOST) {
+      data.REDIS_HOST = 'localhost';
+    }
+    if (!data.REDIS_PORT) {
+      data.REDIS_PORT = 6379;
+    }
+    return data as typeof data & { REDIS_HOST: string; REDIS_PORT: number };
   })
   .superRefine((data, ctx) => {
     if ((data.NODE_ENV === 'production' || data.NODE_ENV === 'staging') && !data.RESEND_API_KEY) {

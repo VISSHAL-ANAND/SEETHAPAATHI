@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -19,18 +19,43 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    const redisUrl = this.configService.get<string>('REDIS_URL');
-    const host = this.configService.get<string>('REDIS_HOST', 'localhost');
-    const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD');
+    const rawRedisUrl = this.configService.get<string>('REDIS_URL') || process.env.REDIS_URL;
+    const redisUrl = rawRedisUrl && rawRedisUrl.trim() !== '' ? rawRedisUrl.trim() : undefined;
+
+    let host = this.configService.get<string>('REDIS_HOST') || process.env.REDIS_HOST;
+    let port = this.configService.get<number>('REDIS_PORT') || (process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : undefined);
+    let password = this.configService.get<string>('REDIS_PASSWORD') || process.env.REDIS_PASSWORD;
+    let isTls = false;
+
+    if (redisUrl) {
+      try {
+        const parsed = new URL(redisUrl);
+        host = parsed.hostname;
+        port = parsed.port ? parseInt(parsed.port, 10) : 6379;
+        if (parsed.password) {
+          password = decodeURIComponent(parsed.password);
+        }
+        isTls = parsed.protocol === 'rediss:';
+      } catch (err) {
+        this.logger.warn(`Could not parse REDIS_URL via URL parser: ${(err as Error).message}`);
+        isTls = redisUrl.startsWith('rediss://');
+      }
+    } else {
+      host = host || 'localhost';
+      port = port || 6379;
+    }
+
+    const scheme = isTls || (redisUrl && redisUrl.startsWith('rediss://')) ? 'rediss' : 'redis';
+    const targetDisplay = `${scheme}://${host}:${port}`;
 
     try {
-      const redisOptions = {
+      const redisOptions: RedisOptions = {
         lazyConnect: true,
         maxRetriesPerRequest: this.isProduction ? 3 : 1,
+        enableReadyCheck: true,
         retryStrategy: (times: number) => {
           if (!this.isProduction && times > 3) {
-            this.logger.warn('⚠️ Redis unreachable in dev. Operating in local memory fallback mode.');
+            this.logger.warn(`⚠️ Redis unreachable at ${targetDisplay} in dev. Operating in local memory fallback mode.`);
             return null; // Stop reconnecting after 3 tries in local dev
           }
           if (this.isProduction) {
@@ -40,6 +65,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
           return Math.min(times * 100, 2000);
         },
       };
+
+      if (isTls || (redisUrl && redisUrl.startsWith('rediss://'))) {
+        redisOptions.tls = {
+          rejectUnauthorized: false,
+        };
+      }
 
       this.client = redisUrl
         ? new Redis(redisUrl, redisOptions)
@@ -52,24 +83,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('connect', () => {
         this.isConnected = true;
-        this.logger.log(`✅ Redis connected at ${host}:${port}`);
+        this.logger.log(`✅ Redis connected at ${targetDisplay}`);
       });
 
       this.client.on('error', (err) => {
         this.isConnected = false;
-        this.logger.error(`Redis connection error: ${err.message}`);
+        this.logger.error(`Redis connection error at ${targetDisplay}: ${err.message}`);
       });
 
       if (this.isProduction) {
         // In production, block initialization and FAIL FAST if Redis cannot connect
-        this.logger.log(`Connecting to Redis at ${host}:${port} (Production mode: strict requirement)...`);
+        this.logger.log(`Connecting to Redis at ${targetDisplay} (Production mode: strict requirement)...`);
         await this.client.connect();
         this.isConnected = true;
-        this.logger.log(`✅ Production Redis connection verified.`);
+        this.logger.log(`✅ Production Redis connection verified at ${targetDisplay}.`);
       } else {
         // Non-blocking connection attempt in development/test
         this.client.connect().catch((err) => {
-          this.logger.warn(`Redis connection failed (${err.message}). Local dev memory fallback active.`);
+          this.logger.warn(`Redis connection failed at ${targetDisplay} (${err.message}). Local dev memory fallback active.`);
         });
       }
     } catch (err: unknown) {
@@ -77,10 +108,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       if (this.isProduction) {
         this.logger.error(`❌ FATAL: Redis connection failed in production mode: ${msg}`);
         throw new Error(
-          `[RedisService] Production requires a functional Redis instance. Memory fallback is strictly forbidden in ${this.configService.get('NODE_ENV')}. Connection to ${host}:${port} failed: ${msg}`,
+          `[RedisService] Production requires a functional Redis instance. Memory fallback is strictly forbidden in ${this.configService.get('NODE_ENV')}. Connection to ${targetDisplay} failed: ${msg}`,
         );
       }
-      this.logger.warn(`Redis client initialization failed: ${msg}. Using memory fallback.`);
+      this.logger.warn(`Redis client initialization failed at ${targetDisplay}: ${msg}. Using memory fallback.`);
     }
   }
 

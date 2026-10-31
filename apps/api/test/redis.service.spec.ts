@@ -73,4 +73,27 @@ describe('RedisService - Production Safety & Fallback Controls (Fix 2)', () => {
       );
     });
   });
+
+  describe('Cloud Redis (REDIS_URL handling)', () => {
+    it('should initialize Redis client targeting the parsed REDIS_URL host and port', async () => {
+      const mockConfigService = {
+        get: jest.fn((key: string, defaultVal?: any) => {
+          if (key === 'NODE_ENV') return 'development';
+          if (key === 'REDIS_URL') return 'rediss://default:upstash_token@cloud-redis.upstash.io:6380';
+          return defaultVal;
+        }),
+      };
+
+      const redisService = new RedisService(mockConfigService as unknown as ConfigService);
+      await redisService.onModuleInit();
+
+      const client = redisService.getClient();
+      expect(client).toBeDefined();
+      expect(client?.options.host).toBe('cloud-redis.upstash.io');
+      expect(client?.options.port).toBe(6380);
+      expect(client?.options.tls).toBeDefined();
+
+      await redisService.onModuleDestroy();
+    });
+  });
 });

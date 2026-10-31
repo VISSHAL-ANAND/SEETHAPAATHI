@@ -20,13 +20,37 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
-    const redisUrl = this.configService.get<string>('REDIS_URL');
-    const host = this.configService.get<string>('REDIS_HOST', 'localhost');
-    const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD');
+    const rawRedisUrl = this.configService.get<string>('REDIS_URL') || process.env.REDIS_URL;
+    const redisUrl = rawRedisUrl && rawRedisUrl.trim() !== '' ? rawRedisUrl.trim() : undefined;
 
-    const connection = redisUrl
-      ? { url: redisUrl, maxRetriesPerRequest: null }
+    let host = this.configService.get<string>('REDIS_HOST') || process.env.REDIS_HOST;
+    let port = this.configService.get<number>('REDIS_PORT') || (process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : undefined);
+    let password = this.configService.get<string>('REDIS_PASSWORD') || process.env.REDIS_PASSWORD;
+    let isTls = false;
+
+    if (redisUrl) {
+      try {
+        const parsed = new URL(redisUrl);
+        host = parsed.hostname;
+        port = parsed.port ? parseInt(parsed.port, 10) : 6379;
+        if (parsed.password) {
+          password = decodeURIComponent(parsed.password);
+        }
+        isTls = parsed.protocol === 'rediss:';
+      } catch {
+        isTls = redisUrl.startsWith('rediss://');
+      }
+    } else {
+      host = host || 'localhost';
+      port = port || 6379;
+    }
+
+    const connection: any = redisUrl
+      ? {
+          url: redisUrl,
+          maxRetriesPerRequest: null,
+          ...(isTls || redisUrl.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {}),
+        }
       : {
           host,
           port,

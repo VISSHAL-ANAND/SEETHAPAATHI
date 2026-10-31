@@ -155,10 +155,12 @@ async function testRedis() {
   const targetDesc = REDIS_URL ? REDIS_URL.replace(/:([^@:]+)@/, ':****@') : `${REDIS_HOST}:${REDIS_PORT}`;
 
   try {
+    const isTls = REDIS_URL ? REDIS_URL.startsWith('rediss://') : false;
     const opts = {
       connectTimeout: 5000,
       maxRetriesPerRequest: 1,
       lazyConnect: true,
+      ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
     };
 
     client = REDIS_URL

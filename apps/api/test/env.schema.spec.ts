@@ -72,4 +72,26 @@ describe('EnvSchema - Configuration Validation', () => {
     expect(validProd.SELLER_GSTIN).toBe('33ABCDE1234F1Z5');
     expect(validProd.SELLER_STATE_CODE).toBe('33');
   });
+
+  it('should correctly parse REDIS_URL and extract host, port, and password without defaulting to localhost:6379', () => {
+    const parsed = validateEnv({
+      NODE_ENV: 'development',
+      REDIS_URL: 'rediss://default:upstash_token_123@mute-violet-12345.upstash.io:6380',
+    });
+
+    expect(parsed.REDIS_URL).toBe('rediss://default:upstash_token_123@mute-violet-12345.upstash.io:6380');
+    expect(parsed.REDIS_HOST).toBe('mute-violet-12345.upstash.io');
+    expect(parsed.REDIS_PORT).toBe(6380);
+    expect(parsed.REDIS_PASSWORD).toBe('upstash_token_123');
+    expect(parsed.REDIS_HOST).not.toBe('localhost');
+  });
+
+  it('should default REDIS_HOST to localhost and REDIS_PORT to 6379 when REDIS_URL is not set', () => {
+    const parsed = validateEnv({
+      NODE_ENV: 'development',
+    });
+
+    expect(parsed.REDIS_HOST).toBe('localhost');
+    expect(parsed.REDIS_PORT).toBe(6379);
+  });
 });
