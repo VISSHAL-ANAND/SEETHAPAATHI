@@ -11,7 +11,7 @@
     "build:contracts": "npm --workspace=@seethapaati/contracts run build",
     "build:api": "npm --workspace=@seethapaati/api run build",
     "build:web": "npm --workspace=@seethapaati/web run build",
-    "build": "npm run build:contracts && npm run build:api",
+    "build": "npm run build:contracts && npm run build:web",
     "build:all": "npm run build:contracts && npm run build:api && npm run build:web",
     "typecheck": "npm --workspace=@seethapaati/contracts run typecheck && npm --workspace=@seethapaati/api run typecheck && npm --workspace=@seethapaati/web run typecheck",
     "test": "npm --workspace=@seethapaati/api run test",
