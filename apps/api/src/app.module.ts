@@ -4,6 +4,7 @@ import { APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { validateEnv } from './config/env.schema';
+import { AppController } from './app.controller';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { QueueModule } from './modules/queue/queue.module';
@@ -27,6 +28,7 @@ import { ReturnsModule } from './modules/returns/returns.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,

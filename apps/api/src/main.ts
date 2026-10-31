@@ -20,6 +20,11 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
 
+  // Direct fast-path handler for external monitoring probes (cron-job.org, UptimeRobot, Render health check)
+  expressApp.get(['/health', '/api/health'], (_req: any, res: any) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Security Headers
   app.use(
     helmet({
@@ -57,8 +62,10 @@ async function bootstrap() {
     ],
   });
 
-  // API Versioning Prefix
-  app.setGlobalPrefix('api/v1');
+  // API Versioning Prefix (excluding root, /health, /api/health for probes & external pingers)
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['/', 'health', 'api/health'],
+  });
 
   // Enable graceful shutdown
   app.enableShutdownHooks();
