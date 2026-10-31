@@ -180,23 +180,21 @@ export default function OrderTrackingPage() {
           <div className="flex flex-col items-start gap-3 rounded-xs border border-[#E3DFD7] bg-white/50 p-4 md:items-end backdrop-blur-xs">
             <div className="text-left md:text-right">
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#B8860B]">
-                Courier Partner
+                Delivery Partner
               </span>
               <p className="text-sm font-medium text-[#181513]">
-                {tracking.courierName || 'Logistics Partner'} · AWB: {tracking.trackingNumber}
+                India Post Speed Post · Consignment: {tracking.trackingNumber}
               </p>
             </div>
-            {tracking.trackingUrl && (
-              <a
-                href={tracking.trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-[#181513] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#F7F5F0] transition hover:bg-[#2E2824]"
-              >
-                Track Package
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            )}
+            <a
+              href={tracking.trackingUrl || 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#181513] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[#F7F5F0] transition hover:bg-[#2E2824]"
+            >
+              Track on India Post
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         )}
       </div>

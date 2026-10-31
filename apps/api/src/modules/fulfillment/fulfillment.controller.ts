@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -12,6 +11,8 @@ import {
 } from '@nestjs/common';
 import {
   CreateShipmentRequestSchema,
+  FulfillOrderRequestSchema,
+  FulfillOrderRequest,
   ManualTrackingRequestSchema,
   ManualTrackingRequest,
   PermissionName,
@@ -48,9 +49,28 @@ export class FulfillmentController {
   }
 
   /**
-   * Manual Admin Tracking Entry
-   * Updates courier name, tracking number (AWB), and tracking URL,
-   * immediately flipping the order status to SHIPPED.
+   * Admin Order Fulfillment via India Post
+   * @route POST /api/admin/orders/:id/fulfill
+   * Accepts { trackingNumber: string }, flips status to SHIPPED, and links India Post tracking.
+   */
+  @Post('admin/orders/:id/fulfill')
+  @Permissions(PermissionName.SHIPMENTS_MANAGE)
+  @HttpCode(HttpStatus.OK)
+  async fulfillOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(FulfillOrderRequestSchema)) b: FulfillOrderRequest,
+    @CurrentUser() u: { id: string; permissions: string[] },
+  ) {
+    const data = await this.shipping.fulfillOrder(id, b.trackingNumber, u.id);
+    return {
+      success: true,
+      message: 'Order dispatched via India Post Speed Post',
+      data,
+    };
+  }
+
+  /**
+   * Manual Admin Tracking Entry (Backwards compatibility)
    */
   @Post('admin/orders/:id/tracking')
   @Permissions(PermissionName.SHIPMENTS_MANAGE)
@@ -60,13 +80,7 @@ export class FulfillmentController {
     @Body(new ZodValidationPipe(ManualTrackingRequestSchema)) b: ManualTrackingRequest,
     @CurrentUser() u: { id: string; permissions: string[] },
   ) {
-    const data = await this.shipping.updateManualTracking(
-      id,
-      b.courierName,
-      b.trackingNumber,
-      b.trackingUrl,
-      u.id,
-    );
+    const data = await this.shipping.fulfillOrder(id, b.trackingNumber, u.id);
     return {
       success: true,
       message: 'Tracking updated and order dispatched',
@@ -115,39 +129,21 @@ export class FulfillmentController {
   /**
    * Delivery Pincode Serviceability Check
    *
-   * @route GET /shipping/serviceability?pincode=600001&weight=500
-   * @param pincode - 6-digit delivery pincode
-   * @param weight  - package weight in grams (default: 500)
-   *
-   * Returns courier availability and estimated delivery days for the given pincode.
-   * Results are cached in Redis for 6 hours to minimize Shiprocket API calls.
+   * @route GET /shipping/serviceability?pincode=600004
+   * Validates 6-digit Indian postal code (/^[1-9][0-9]{5}$/).
+   * Returns serviceable: true, carrier: "India Post Speed Post", estimatedDays: "3-5 Business Days".
    */
   @Public()
   @SkipThrottle()
   @Get('shipping/serviceability')
-  async serviceability(
-    @Query('pincode') pincode: string,
-    @Query('weight') weight?: string,
-  ) {
-    const weightGrams = weight ? parseInt(weight, 10) : 500;
-    const data = await this.shipping.checkServiceability(pincode, weightGrams);
-    return { success: true, data };
-  }
-
-  /**
-   * Live Automated Shipping Webhook Endpoint (Shiprocket / Logistics Partners)
-   *
-   * Always returns HTTP 200 — Shiprocket retries on non-200 responses.
-   * Optional webhook token validation via X-Shiprocket-Token header.
-   */
-  @Public()
-  @SkipThrottle()
-  @Post('webhooks/shipping')
-  @HttpCode(HttpStatus.OK)
-  async shippingWebhook(
-    @Body() payload: any,
-    @Headers('x-shiprocket-token') webhookToken?: string,
-  ) {
-    return await this.shipping.processShippingWebhook(payload, webhookToken);
+  async serviceability(@Query('pincode') pincode: string) {
+    const data = await this.shipping.checkServiceability(pincode);
+    return {
+      success: true,
+      serviceable: data.serviceable,
+      carrier: data.carrier,
+      estimatedDays: data.estimatedDays,
+      data,
+    };
   }
 }

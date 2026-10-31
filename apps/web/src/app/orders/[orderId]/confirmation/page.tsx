@@ -307,10 +307,19 @@ export default function OrderConfirmationPage() {
                 <p className="text-[10px] uppercase tracking-[0.16em] text-[#A66B18]">{formatStatus(shipment.status)}</p>
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="border-t border-[#E3DFD7] pt-4"><p className="text-[9px] uppercase tracking-[0.15em] text-[#181513]/45">Tracking</p><p className="mt-2 text-sm">{shipment.trackingNumber || 'Tracking will appear once assigned.'}</p></div>
-                <div className="border-t border-[#E3DFD7] pt-4"><p className="text-[9px] uppercase tracking-[0.15em] text-[#181513]/45">Dispatched</p><p className="mt-2 text-sm">{shipment.dispatchedAt ? new Date(shipment.dispatchedAt).toLocaleDateString('en-IN') : 'Not dispatched yet'}</p></div>
+                <div className="border-t border-[#E3DFD7] pt-4"><p className="text-[9px] uppercase tracking-[0.15em] text-[#181513]/45">India Post Tracking Number</p><p className="mt-2 text-sm font-medium">{shipment.trackingNumber || 'Consignment number will appear once dispatched.'}</p></div>
+                <div className="border-t border-[#E3DFD7] pt-4"><p className="text-[9px] uppercase tracking-[0.15em] text-[#181513]/45">Dispatched</p><p className="mt-2 text-sm">{shipment.dispatchedAt ? new Date(shipment.dispatchedAt).toLocaleDateString('en-IN') : 'Preparing for dispatch'}</p></div>
               </div>
-              {shipment.trackingUrl && <a href={shipment.trackingUrl} target="_blank" rel="noreferrer" className="mt-5 inline-block text-[10px] uppercase tracking-[0.16em] text-[#A66B18] underline underline-offset-4">Track with carrier →</a>}
+              {shipment.trackingNumber && (
+                <a
+                  href={shipment.trackingUrl || 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 bg-[#181513] px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#F7F5F0] transition hover:bg-[#2E2824]"
+                >
+                  Track on India Post →
+                </a>
+              )}
               {shipment.trackingEvents?.length > 0 && <div className="mt-7 divide-y divide-[#E3DFD7] border-y border-[#E3DFD7]">{shipment.trackingEvents.map((event) => <div key={event.id} className="grid gap-2 py-4 sm:grid-cols-[180px_1fr]"><p className="text-[9px] uppercase tracking-[0.14em] text-[#181513]/45">{new Date(event.occurredAt).toLocaleString('en-IN')}</p><div><p className="text-xs uppercase tracking-[0.12em]">{formatStatus(event.status)}</p>{event.description && <p className="mt-1 text-sm text-[#181513]/55">{event.description}</p>}{event.location && <p className="mt-1 text-xs text-[#181513]/40">{event.location}</p>}</div></div>)}</div>}
             </section>
           )}

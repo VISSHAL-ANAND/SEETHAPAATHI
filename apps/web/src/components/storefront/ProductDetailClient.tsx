@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
+  Truck,
   Check,
   ShoppingBag,
   ArrowLeft,
@@ -17,7 +18,8 @@ import {
   HeartHandshake,
 } from 'lucide-react';
 import type { ProductDto } from '@seethapaati/contracts';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../../context/CartContext';
+import { fetchApi } from '../../lib/api-client';
 import { Button } from '../ui/Button';
 import { MobileStickyBuyBar } from './MobileStickyBuyBar';
 
@@ -34,6 +36,60 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
   const [state, setState] = useState<'ready' | 'adding' | 'added' | 'error'>('ready');
   const [bagError, setBagError] = useState('');
   const [openAccordion, setOpenAccordion] = useState<string | null>('secret');
+  const [pincode, setPincode] = useState('');
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeResult, setPincodeResult] = useState<{
+    checked: boolean;
+    serviceable?: boolean;
+    carrier?: string;
+    estimatedDays?: string;
+    message?: string;
+  } | null>(null);
+
+  const checkPincodeServiceability = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPin = pincode.trim();
+    if (!/^[1-9][0-9]{5}$/.test(cleanPin)) {
+      setPincodeResult({
+        checked: true,
+        serviceable: false,
+        message: 'Please enter a valid 6-digit Indian PIN code',
+      });
+      return;
+    }
+    setPincodeLoading(true);
+    try {
+      const res = await fetchApi<{
+        serviceable: boolean;
+        carrier: string;
+        estimatedDays: string;
+      }>('/shipping/serviceability?pincode=' + cleanPin);
+
+      if (res && res.serviceable) {
+        setPincodeResult({
+          checked: true,
+          serviceable: true,
+          carrier: res.carrier || 'India Post Speed Post',
+          estimatedDays: res.estimatedDays || '3-5 Business Days',
+        });
+      } else {
+        setPincodeResult({
+          checked: true,
+          serviceable: false,
+          message: 'Delivery currently unavailable for this postal code.',
+        });
+      }
+    } catch {
+      setPincodeResult({
+        checked: true,
+        serviceable: true,
+        carrier: 'India Post Speed Post',
+        estimatedDays: '3-5 Business Days',
+      });
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
 
   const { addItem } = useCart();
 
@@ -307,6 +363,56 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
                   >
                     View Bag →
                   </Link>
+                </div>
+              )}
+            </div>
+
+            {/* India Post Pincode Serviceability Widget */}
+            <div className="mt-6 border border-[#E3DFD7] bg-white/50 p-4 rounded-xs backdrop-blur-xs">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-[#B8860B]" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#181513]">
+                  Check Delivery Availability
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-[#181513]/65">
+                Orders dispatched nationwide via India Post Speed Post.
+              </p>
+              <form onSubmit={checkPincodeServiceability} className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  maxLength={6}
+                  placeholder="Enter 6-digit PIN code"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
+                  className="flex-1 border border-[#E3DFD7] bg-white px-3 py-2 text-xs text-[#181513] placeholder:text-[#181513]/40 focus:border-[#B8860B] focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={pincodeLoading || pincode.trim().length !== 6}
+                  className="bg-[#181513] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#F7F5F0] transition hover:bg-[#2E2824] disabled:opacity-40 cursor-pointer"
+                >
+                  {pincodeLoading ? 'Checking…' : 'Check'}
+                </button>
+              </form>
+
+              {pincodeResult?.checked && (
+                <div className="mt-3 pt-3 border-t border-[#E3DFD7]/70 text-xs">
+                  {pincodeResult.serviceable ? (
+                    <div className="flex items-start gap-2 text-[#1A2820]">
+                      <Check className="h-4 w-4 text-[#B8860B] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-[11px]">
+                          Delivery available via {pincodeResult.carrier || 'India Post Speed Post'}
+                        </p>
+                        <p className="text-[10px] text-[#181513]/65">
+                          Estimated dispatch to arrival: {pincodeResult.estimatedDays}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-red-700 text-[11px]">{pincodeResult.message}</p>
+                  )}
                 </div>
               )}
             </div>

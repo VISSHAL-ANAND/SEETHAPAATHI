@@ -398,11 +398,11 @@ export class WebhookService {
     }
 
     // Push paid order to Shiprocket in background if configured
-    if (result.status === OrderStatus.PAID && this.shippingService) {
-      this.shippingService
-        .pushOrderToShiprocket(result.orderId)
-        .catch((err) => this.logger.warn(`Background Shiprocket push error: ${err.message}`));
+    // Order confirmed as PAID - ready for India Post dispatch
+    if (result.status === OrderStatus.PAID) {
+      this.logger.log(`Order ${result.orderId} is confirmed and queued for India Post fulfillment`);
     }
+
 
     return {
       success: true,

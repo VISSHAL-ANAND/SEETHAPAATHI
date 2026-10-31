@@ -21,66 +21,30 @@
 
 ---
 
-## Shiprocket Fulfillment Architecture
+## India Post Fulfillment Architecture
 
-### JWT Caching Strategy (240h / 10-day validity)
-```
-TOKEN LIFECYCLE:
-  Auth Login → Shiprocket JWT (valid 10 days / 240h)
-  Cache Key: "shiprocket:jwt_token" in Redis
-  Cache TTL: 8 days (691,200 seconds) — refresh before expiry window
-  On 401 from any Shiprocket API call:
-    1. Delete cache key
-    2. Re-authenticate immediately
-    3. Retry original request once
-  Fallback: In-memory Map<string, {token, expiresAt}> if Redis unavailable
-```
-
-### Idempotent Order Generation
-```
-GUARD CONDITION (must all pass before pushOrderToShiprocket):
-  1. order.status === 'PAID' (verified payment captured)
-  2. order.shiprocketOrderId IS NULL (not yet pushed)
-  3. Payment webhook event processed = true (atomic DB flag)
-
-FLOW:
-  payment.captured webhook → handlePaymentCaptured()
-    → order.status = PAID (atomic transaction)
-    → outbox.enqueueInvoiceGeneration()
-    → shippingService.pushOrderToShiprocket() [background, non-blocking]
-      → check shiprocketOrderId null guard
-      → POST /orders/create/adhoc
-      → on success: update order.shiprocketOrderId = data.order_id
-      → on failure: log error, do NOT retry immediately (BullMQ retry handles)
-
-DUPLICATE PROTECTION:
-  - Check order.shiprocketOrderId !== null before API call
-  - Use Redis SET NX (set-if-not-exists) lock: "shiprocket:push:{orderId}"
-  - TTL 30 minutes on the lock
-```
+### Fulfillment Engine & Consignment Tracking
+All order dispatches are fulfilled via **India Post (Speed Post / Registered Parcel)**:
+- **Courier Partner:** India Post (`courierPartner: 'India Post'` by default).
+- **Consignment Tracking Link:**
+  `https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx`
+- **Admin Fulfillment Endpoint:**
+  `POST /api/v1/admin/orders/:id/fulfill`
+  - Accepts `{ trackingNumber: string }` (India Post consignment barcode / article number).
+  - Updates order status to `SHIPPED`, stores the unique `trackingNumber`, sets `shippedAt` to current timestamp, and links the public India Post tracking portal.
+  - Automatically records state transition in `OrderStatusHistory` and enqueues customer email/SMS dispatch notifications.
 
 ### Serviceability Endpoint
 ```
-GET /api/shipping/serviceability?pincode={pincode}&weight={grams}
-  → Calls Shiprocket: GET /courier/serviceability
-    params: pickup_postcode, delivery_postcode, weight, cod=0
-  → Returns: { serviceable: bool, couriers: [...], estimatedDays: number }
-  → Cache result: Redis key "sr:serviceability:{pincode}:{weight}" TTL 6h
-```
-
-### Webhook Handler (/webhooks/shipping)
-```
-EVENTS:
-  - AWB_ASSIGNED: shipment.status → AWB_ASSIGNED, order.trackingNumber = awb
-  - PICKED_UP / IN_TRANSIT: shipment.status → IN_TRANSIT
-  - OUT_FOR_DELIVERY: shipment.status → OUT_FOR_DELIVERY
-  - DELIVERED: shipment.status → DELIVERED, order.deliveredAt = now
-  - RTO / RETURNED / CANCELLED: shipment.status → CANCELLED
-
-SECURITY:
-  - Validate optional SHIPROCKET_WEBHOOK_TOKEN header if configured
-  - Log all incoming payloads for audit trail
-  - Return 200 always (Shiprocket retries on non-200)
+GET /api/v1/shipping/serviceability?pincode={pincode}
+  → Validates against Indian PIN code regex (/^[1-9][0-9]{5}$/).
+  → Returns: {
+      success: true,
+      serviceable: true,
+      carrier: "India Post Speed Post",
+      estimatedDays: "3-5 Business Days"
+    }
+  → India Post covers 100% of postal circles and pincodes nationwide.
 ```
 
 ---
@@ -114,29 +78,11 @@ Deep Forest Slate:  #1A2820  (primary dark, nav backgrounds)
 Warm Linen:         #FAF7F2  (primary canvas/background)
 Muted Gold:         #C8A265  (accents, CTAs, hover states)
 Current code uses: #241C18 (terroir), #F7F5F0 (canvas), #B8860B (saffron)
-These are acceptable — slight warm variation. Use consistently.
 ```
 
-### Placeholder Purge Checklist
-- ❌ "Scroll" / "Scroll down" — replace with directional micro-labels or remove
-- ❌ "Lorem ipsum" — must not appear anywhere in production templates
-- ❌ "Read more" — replace with contextual link text (e.g. "Explore this blend →")
-- ❌ Generic bouncy scroll arrows (animated SVG or emoji arrows) — remove entirely
-- ❌ Dummy review text / star ratings with "lorem ipsum" copy — remove or replace with real content
-- ❌ "placeholder@example.com" or "test user" display names — remove
-
 ### Cart & Commerce UX Rules
-- Cart drawer: must open as side sheet, NOT as full-page redirect
-- Grammage selector (50g / 100g / 250g): pill buttons, active state = gold border + fill
-- Sticky mobile checkout bar: fixed bottom, must not cause layout shift (use `padding-bottom` on body)
-- Zero layout shift on font load: use `font-display: swap` with system fallbacks
-- All form inputs: border-radius: 0 (editorial square, no pill inputs)
-
----
-
-## Deployment Rules (Zero-Cost Architecture)
-- Health endpoint: `/api/health` → `{ status: "ok", timestamp: ISO8601, uptime: seconds }`
-- Keep-alive: configure UptimeRobot or cron-job.org to ping `/api/health` every 14 minutes
-- Never log secrets or full request bodies containing card data
-- All background jobs (invoice, notification, Shiprocket push) via BullMQ with Redis
-- Graceful shutdown: drain BullMQ queues before process.exit()
+- Cart drawer: side sheet pattern (zero page navigation for bag additions)
+- Grammage selector: pill buttons, active state = gold border + fill
+- Sticky mobile checkout bar: fixed bottom, `pb-20 md:pb-0` on container to prevent layout shift
+- Zero layout shift on font load: `next/font` with `display: swap`
+- All form inputs: editorial square (`border-radius: 0`)

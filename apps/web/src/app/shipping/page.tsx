@@ -97,7 +97,7 @@ export default function ShippingPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">3. Courier Partners &amp; Live Tracking</h2>
             <p className="mt-3">
-              We partner with trusted national logistics networks including Bluedart, Delhivery, DTDC, and India Post Speed Post (for remote pincodes).
+              We dispatch 100% of our orders via India Post (Speed Post & Registered Parcel), guaranteeing reliable, state-backed delivery to every postal code across India.
             </p>
             <p className="mt-2">
               As soon as your package is scanned at the hub, an automated SMS and WhatsApp update with your live tracking AWB link will be dispatched to your phone. You can also monitor your parcel status directly on our{' '}
