@@ -85,7 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col bg-[#F7F5F0] text-[#181513] selection:bg-[#181513] selection:text-[#F7F5F0]">
         <CartProvider>
           <SiteHeader />
-          <main className="flex-grow pb-20 md:pb-0">{children}</main>
+          <main className="flex-grow pb-28 md:pb-0">{children}</main>
           <CartDrawer />
           <MobileBottomNav />
           <footer className="bg-[#241C18] text-[#F7F5F0] pt-16 pb-24 md:pb-10 mt-24">

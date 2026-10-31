@@ -35,6 +35,13 @@ const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.REFUNDED]: [],
 };
 
+const SHIPPED_STATUSES: OrderStatus[] = [
+  OrderStatus.SHIPPED,
+  OrderStatus.IN_TRANSIT,
+  OrderStatus.OUT_FOR_DELIVERY,
+  OrderStatus.DELIVERED,
+];
+
 /**
  * ORDERS SERVICE
  *
@@ -190,6 +197,12 @@ export class OrdersService {
       return order; // Idempotent no-op
     }
 
+    if (targetStatus === OrderStatus.CANCELLED && SHIPPED_STATUSES.includes(order.status)) {
+      throw new BadRequestException({
+        message: 'Orders that have already been shipped cannot be cancelled directly. Please initiate a return upon delivery.',
+      });
+    }
+
     const allowed = VALID_ORDER_TRANSITIONS[order.status] ?? [];
     if (!allowed.includes(targetStatus)) {
       throw new ConflictException({
@@ -228,7 +241,7 @@ export class OrdersService {
 
   /**
    * Cancel order by customer.
-   * Allowed ONLY if order is in PENDING_PAYMENT state.
+   * Allowed ONLY if order is in PENDING_PAYMENT, PAID, or PROCESSING state.
    */
   async cancelOrder(orderId: string, userId: string, reason?: string) {
     const order = await this.prisma.order.findUnique({
@@ -243,7 +256,20 @@ export class OrdersService {
       throw new ForbiddenException({ error: 'ORDER_FORBIDDEN', message: 'Access denied' });
     }
 
-    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+    if (SHIPPED_STATUSES.includes(order.status)) {
+      throw new BadRequestException({
+        message: 'Orders that have already been shipped cannot be cancelled directly. Please initiate a return upon delivery.',
+      });
+    }
+
+    const cancellableStatuses: OrderStatus[] = [
+      OrderStatus.PENDING_PAYMENT,
+      OrderStatus.PAID,
+      OrderStatus.PROCESSING,
+      OrderStatus.PACKED,
+    ];
+
+    if (!cancellableStatuses.includes(order.status)) {
       throw new BadRequestException({
         error: 'ORDER_CANNOT_BE_CANCELLED',
         message: `Order in state '${order.status}' cannot be cancelled by customer`,

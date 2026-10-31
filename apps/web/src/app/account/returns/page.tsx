@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ArrowUpRight, RotateCcw, CheckCircle2 } from 'lucide-react';
-import { fetchApi } from '../../../lib/api-client';
+import { ArrowLeft, ArrowUpRight, RotateCcw, CheckCircle2, LogIn } from 'lucide-react';
+import { fetchApi, ApiClientError } from '../../../lib/api-client';
 
 type ReturnItem = {
   id: string;
@@ -46,23 +46,58 @@ const lifecycle = [
 export default function ReturnsPage() {
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [error, setError] = useState('');
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
+    setIsUnauthorized(false);
     fetchApi<ReturnRecord[]>('/returns')
       .then(setReturns)
-      .catch((err) => setError(err instanceof Error ? err.message : 'Unable to load returns'))
+      .catch((err) => {
+        if (err instanceof ApiClientError && (err.status === 401 || err.code === 'UNAUTHORIZED')) {
+          setIsUnauthorized(true);
+        } else {
+          setError(err instanceof Error ? err.message : 'Unable to load returns');
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
+  // Graceful Unauthenticated Empty State
+  if (isUnauthorized) {
+    return (
+      <main className="editorial-page mx-auto max-w-[1280px] px-6 py-24 text-center md:py-32">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#FAF7F2] border border-[#ECE7DE] text-[#183024]">
+          <LogIn className="h-7 w-7" />
+        </div>
+        <h1 className="mt-6 font-serif text-3xl font-normal text-[#181513]">
+          Please sign in to view your account details
+        </h1>
+        <p className="mt-2 text-xs text-[#181513]/65 max-w-md mx-auto leading-relaxed">
+          Sign in to view your return requests, track reverse pickup milestones, or check refund disbursement status.
+        </p>
+        <div className="mt-8">
+          <Link
+            href="/account/login?redirect=/account/returns"
+            className="inline-flex items-center gap-2 rounded-xs bg-[#183024] px-7 py-3.5 text-xs uppercase tracking-[0.18em] text-[#FAF7F2] transition hover:bg-[#254333]"
+          >
+            Sign In to Your Account
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="editorial-page mx-auto max-w-[1280px] px-6 pb-24 pt-10 md:px-10 md:pb-32 md:pt-14">
-      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-[#E3DFD7] pb-8">
+      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-[#ECE7DE] pb-8">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.22em] text-[#B8860B]">
             Customer Support
           </p>
-          <h1 className="mt-3 font-serif text-5xl font-normal tracking-[-0.04em] text-[#181513] md:text-6xl">
+          <h1 className="mt-3 font-serif text-4xl font-normal tracking-[-0.04em] text-[#181513] md:text-5xl">
             Returns & Refunds
           </h1>
         </div>
@@ -84,12 +119,12 @@ export default function ReturnsPage() {
       {loading ? (
         <div className="mt-8 space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-44 animate-pulse bg-[#ECE8E0]" />
+            <div key={i} className="h-44 rounded-xs border border-[#ECE7DE] bg-white p-4 animate-pulse" />
           ))}
         </div>
       ) : returns.length === 0 ? (
         <div className="py-24 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#ECE8E0] text-[#181513]/40">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#FAF7F2] border border-[#ECE7DE] text-[#181513]/40">
             <RotateCcw className="h-8 w-8" />
           </div>
           <p className="mt-6 font-serif text-3xl text-[#181513]">No active return requests</p>
@@ -98,18 +133,18 @@ export default function ReturnsPage() {
           </p>
           <Link
             href="/account/orders"
-            className="mt-6 inline-flex items-center gap-2 bg-[#181513] px-6 py-3 text-xs uppercase tracking-[0.18em] text-[#F7F5F0] transition hover:bg-[#2E2824]"
+            className="mt-6 inline-flex items-center gap-2 rounded-xs bg-[#183024] px-6 py-3 text-xs uppercase tracking-[0.18em] text-[#FAF7F2] transition hover:bg-[#254333]"
           >
             Review Delivered Orders
           </Link>
         </div>
       ) : (
-        <div className="mt-8 space-y-12">
+        <div className="mt-8 space-y-8">
           {returns.map((ret) => {
             const currentIdx = lifecycle.findIndex((s) => s.key === ret.status);
 
             return (
-              <article key={ret.id} className="border-t border-[#181513] pt-6 bg-white/20 p-6 md:p-8">
+              <article key={ret.id} className="rounded-sm border border-[#ECE7DE] bg-white p-6 md:p-8 shadow-xs">
                 <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
                   <div>
                     <div className="flex flex-wrap items-baseline justify-between gap-4">
@@ -129,7 +164,7 @@ export default function ReturnsPage() {
                     </div>
 
                     {/* Responsive Lifecycle Timeline */}
-                    <div className="mt-8 border-y border-[#E3DFD7] py-6">
+                    <div className="mt-8 border-y border-[#ECE7DE] py-6">
                       <div className="flex flex-wrap gap-2 sm:gap-4">
                         {lifecycle.map((stage, idx) => {
                           const isDone = idx <= currentIdx;
@@ -148,7 +183,7 @@ export default function ReturnsPage() {
                             >
                               <span
                                 className={`h-2 w-2 rounded-full ${
-                                  isCurrent ? 'bg-[#B8860B]' : isDone ? 'bg-[#181513]' : 'bg-[#181513]/25'
+                                  isCurrent ? 'bg-[#B8860B]' : isDone ? 'bg-[#183024]' : 'bg-[#181513]/25'
                                 }`}
                               />
                               <span>{stage.label}</span>
@@ -166,7 +201,7 @@ export default function ReturnsPage() {
                       <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#181513]/60">
                         Returned Items
                       </p>
-                      <div className="divide-y divide-[#E3DFD7]">
+                      <div className="divide-y divide-[#ECE7DE]">
                         {ret.items.map((item) => (
                           <div key={item.id} className="flex justify-between py-2 text-xs">
                             <span className="text-[#181513]">Quantity: {item.quantity}</span>
@@ -181,7 +216,7 @@ export default function ReturnsPage() {
                   </div>
 
                   {/* Aside details */}
-                  <aside className="space-y-6 border-t border-[#E3DFD7] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                  <aside className="space-y-6 border-t border-[#ECE7DE] pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#181513]/55">
                         Date Requested
@@ -221,7 +256,7 @@ export default function ReturnsPage() {
                       ) : (
                         <div className="mt-2 space-y-3">
                           {ret.refunds.map((refund) => (
-                            <div key={refund.id} className="border border-[#E3DFD7] bg-white/40 p-3">
+                            <div key={refund.id} className="rounded-xs border border-[#ECE7DE] bg-[#FAF7F2] p-3">
                               <p className="font-serif text-xl text-[#181513]">
                                 ₹{(refund.amountCents / 100).toLocaleString('en-IN')}
                               </p>

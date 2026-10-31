@@ -22,7 +22,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E3DFD7] bg-[#F7F5F0]/95 backdrop-blur-md md:hidden transition-transform duration-300 shadow-[0_-4px_20px_rgba(24,21,19,0.06)]"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[#FBF9F5]/95 backdrop-blur-md border-t border-[#E7E2D8] md:hidden transition-transform duration-300 shadow-[0_-4px_20px_rgba(24,21,19,0.06)]"
       style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom, 0px))' }}
       aria-label="Mobile Bottom Navigation"
     >

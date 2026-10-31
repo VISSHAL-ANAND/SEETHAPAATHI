@@ -49,16 +49,22 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-[#E3DFD7] bg-[#F7F5F0]/95 backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 bg-[#FBF9F5]/90 backdrop-blur-md border-b border-[#E7E2D8] transition-colors">
         <div className="mx-auto flex min-h-[64px] max-w-[1600px] items-center justify-between gap-4 px-5 py-3 md:min-h-[76px] md:px-10">
           {/* Brand Logo */}
+          {/* Brand Logo & Luxury Heritage Mark */}
           <Link
             href="/"
             onClick={closeMobileMenu}
-            className="shrink-0 font-serif text-[24px] tracking-[-0.045em] text-[#181513] transition-opacity hover:opacity-75 md:text-[27px]"
+            className="shrink-0 flex flex-col items-start leading-none group transition-opacity hover:opacity-90"
             aria-label="Seethapaati home"
           >
-            SEETHAPAATI<span className="ml-0.5 text-[#B8860B]">.</span>
+            <span className="font-serif text-[23px] font-semibold tracking-[-0.03em] text-[#1A2820] md:text-[27px]">
+              SEETHAPAATI<span className="ml-0.5 text-[#C8A265]">.</span>
+            </span>
+            <span className="mt-0.5 text-[9px] tracking-[0.25em] text-stone-500 uppercase font-sans font-medium">
+              EST. NILGIRIS
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

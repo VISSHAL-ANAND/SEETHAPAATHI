@@ -31,19 +31,20 @@ export class FulfillmentController {
   constructor(private readonly shipping: ShippingService) {}
 
   /**
-   * Customer & Staff Order Tracking
+   * Customer & Staff Order Tracking (Publicly viewable for order fulfillment tracking)
    */
   @Get('orders/:id/track')
+  @Public()
   async track(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() u: { id: string; permissions: string[] },
+    @CurrentUser() u?: { id: string; permissions: string[] },
   ) {
     return {
       success: true,
       data: await this.shipping.track(
         id,
-        u.id,
-        u.permissions.includes(PermissionName.ORDERS_READ_ALL),
+        u?.id,
+        Boolean(u?.permissions?.includes(PermissionName.ORDERS_READ_ALL)),
       ),
     };
   }

@@ -256,7 +256,7 @@ export default function OrderConfirmationPage() {
 
   return (
     <main className="editorial-page mx-auto max-w-[1280px] px-6 pb-24 pt-12 md:px-10 md:pb-32 md:pt-20">
-      <header className="border-b border-[#E3DFD7] pb-10">
+      <div className="border-b border-[#E3DFD7] pb-10">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-[#B8860B]">Order Confirmed</p>
         <div className="mt-5 flex flex-wrap items-end justify-between gap-6">
           <div>
@@ -265,7 +265,7 @@ export default function OrderConfirmationPage() {
           </div>
           <p className="text-[10px] uppercase tracking-[0.18em] text-[#A66B18]">{formatStatus(order.status)}</p>
         </div>
-      </header>
+      </div>
 
       {error && <p role="alert" className="mt-6 border-l-2 border-red-700 px-4 py-2 text-sm text-red-700">{error}</p>}
       {message && <p role="status" className="mt-6 border-l-2 border-[#B8860B] px-4 py-2 text-sm">{message}</p>}
