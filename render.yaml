@@ -9,7 +9,7 @@ services:
     region: singapore
     buildCommand: npm install && npm run build:contracts && npm run build:api
     startCommand: npm run start:api
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /health
     scaling:
       minInstances: 2
       maxInstances: 10
