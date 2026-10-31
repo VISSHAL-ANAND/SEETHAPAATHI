@@ -47,14 +47,6 @@ services:
         sync: false
       - key: EMAIL_FROM
         value: orders@seethapaati.com
-      - key: SHIPROCKET_EMAIL
-        sync: false
-      - key: SHIPROCKET_PASSWORD
-        sync: false
-      - key: SHIPROCKET_CHANNEL_ID
-        sync: false
-      - key: SHIPROCKET_WEBHOOK_TOKEN
-        sync: false
       - key: SELLER_LEGAL_NAME
         value: Seethapaati Foods Private Limited
       - key: SELLER_TRADE_NAME
