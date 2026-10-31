@@ -55,35 +55,51 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs print:p-0 print:bg-white print:static">
-      {/* Print-specific style block */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs print:static print:p-0 print:m-0 print:bg-transparent print:border-none print:h-auto print:w-auto">
+      {/* Strict Single-Page Print Isolation Styles */}
       <style jsx global>{`
         @media print {
-          body * {
-            visibility: hidden;
+          @page {
+            size: A5 portrait;
+            margin: 8mm;
           }
-          #printable-shipping-label,
-          #printable-shipping-label * {
-            visibility: visible;
-          }
-          #printable-shipping-label {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 12px;
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
-            color: black !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          body * {
+            visibility: hidden !important;
           }
           .no-print {
             display: none !important;
           }
+          #printable-shipping-label,
+          #printable-shipping-label * {
+            visibility: visible !important;
+          }
+          #printable-shipping-label {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 10px !important;
+            background: white !important;
+            color: black !important;
+            box-sizing: border-box !important;
+            page-break-after: avoid !important;
+            page-break-before: avoid !important;
+            break-inside: avoid !important;
+          }
         }
       `}</style>
 
-      <div className="relative w-full max-w-2xl rounded-sm border border-[#ECE7DE] bg-white p-6 shadow-2xl print:border-none print:shadow-none print:p-0">
-        {/* Modal Controls (Hidden in Print) */}
+      <div className="relative w-full max-w-2xl rounded-sm border border-[#ECE7DE] bg-white p-6 shadow-2xl print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none print:w-full">
+        {/* Modal Controls (Strictly Hidden in Print) */}
         <div className="no-print mb-4 flex items-center justify-between border-b border-[#ECE7DE] pb-3">
           <div className="flex items-center gap-2">
             <Printer className="h-5 w-5 text-[#183024]" />
@@ -109,54 +125,54 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
           </div>
         </div>
 
-        {/* Printable Label Sheet */}
+        {/* Printable Label Sheet (Single-Page Isolated) */}
         <div
           id="printable-shipping-label"
-          className="border-2 border-black bg-white p-5 text-black font-sans text-xs leading-tight"
+          className="border-2 border-black bg-white p-4 text-black font-sans text-xs leading-tight"
         >
           {/* Header Bar */}
-          <div className="flex items-center justify-between border-b-2 border-black pb-3">
+          <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
             <div>
-              <h1 className="font-serif text-xl font-bold tracking-tight text-black uppercase">
+              <h1 className="font-serif text-lg font-bold tracking-tight text-black uppercase">
                 SEETHAPAATI HEIRLOOM FOODS
               </h1>
-              <p className="text-[10px] tracking-widest uppercase font-semibold text-stone-700">
+              <p className="text-[9.5px] tracking-widest uppercase font-semibold text-stone-700">
                 Nilgiris Artisanal Mill & Provisions
               </p>
             </div>
-            <div className="text-right border-l-2 border-black pl-4">
-              <span className="inline-block bg-black text-white px-2.5 py-1 text-xs font-bold uppercase tracking-wider">
+            <div className="text-right border-l-2 border-black pl-3">
+              <span className="inline-block bg-black text-white px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">
                 INDIA POST (SPEED POST)
               </span>
-              <p className="mt-1 font-mono text-[11px] font-bold">
+              <p className="mt-0.5 font-mono text-[10px] font-bold">
                 CONSIGNMENT: {trackingNo}
               </p>
             </div>
           </div>
 
           {/* Barcode Mock / Tracking Header */}
-          <div className="my-3 border-b-2 border-black pb-3 text-center">
-            <div className="tracking-widest font-mono text-lg font-bold">
+          <div className="my-2 border-b-2 border-black pb-2 text-center">
+            <div className="tracking-widest font-mono text-base font-bold">
               * {trackingNo} *
             </div>
-            <div className="mx-auto mt-1 h-8 w-64 bg-repeating-linear-gradient flex items-center justify-center font-mono text-[9px] text-stone-500">
+            <div className="mx-auto mt-0.5 h-6 w-60 flex items-center justify-center font-mono text-[8px] text-stone-500 tracking-[0.2em]">
               ||||| | |||| ||| |||||| | || ||||| |||| | ||| |||||
             </div>
           </div>
 
           {/* From & To Grid */}
-          <div className="grid grid-cols-2 gap-4 border-b-2 border-black pb-4">
+          <div className="grid grid-cols-2 gap-3 border-b-2 border-black pb-3">
             {/* FROM Box */}
-            <div className="border-r-2 border-black pr-4">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600">
+            <div className="border-r-2 border-black pr-3">
+              <span className="text-[8.5px] font-bold uppercase tracking-widest text-stone-600">
                 FROM (SHIPPER):
               </span>
-              <div className="mt-1 space-y-0.5 text-[11px]">
+              <div className="mt-1 space-y-0.5 text-[10.5px]">
                 <p className="font-bold text-black">SEETHAPAATI HEIRLOOM FOODS</p>
                 <p>Atelier: Nilgiris Organic Processing Hub</p>
                 <p>Chennai Central Fulfillment Center</p>
-                <p className="font-medium">FSSAI Lic. No: 12424999000142</p>
-                <p className="pt-1 text-[10px] text-stone-800">
+                <p className="font-medium text-[10px]">FSSAI Lic. No: 12424999000142</p>
+                <p className="pt-0.5 text-[9.5px] text-stone-800">
                   Contact: +91 94440 12345 | care@seethapaati.com
                 </p>
               </div>
@@ -164,25 +180,25 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
 
             {/* TO Box */}
             <div>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600">
+              <span className="text-[8.5px] font-bold uppercase tracking-widest text-stone-600">
                 TO (CONSIGNEE):
               </span>
               <div className="mt-1 space-y-0.5 text-xs">
                 <p className="font-bold text-sm text-black">
                   {addr.fullName || 'Patron Consignee'}
                 </p>
-                <p>{addr.addressLine1 || '—'}</p>
-                {addr.addressLine2 && <p>{addr.addressLine2}</p>}
-                <p>
+                <p className="text-[11px]">{addr.addressLine1 || '—'}</p>
+                {addr.addressLine2 && <p className="text-[11px]">{addr.addressLine2}</p>}
+                <p className="text-[11px]">
                   {addr.city || '—'}, {addr.state || '—'}
                 </p>
 
                 {/* Bold Monospace PIN Code Highlight */}
-                <div className="my-1.5 inline-block border-2 border-black bg-stone-100 px-3 py-1 font-mono text-base font-extrabold text-black">
+                <div className="my-1 inline-block border-2 border-black bg-stone-100 px-2.5 py-0.5 font-mono text-sm font-extrabold text-black">
                   PIN: {formattedPin}
                 </div>
 
-                <p className="font-bold text-[11px]">
+                <p className="font-bold text-[10.5px]">
                   Phone: {addr.phone || '—'}
                 </p>
               </div>
@@ -190,13 +206,13 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
           </div>
 
           {/* Order Details & Logistics */}
-          <div className="my-3 grid grid-cols-3 gap-2 border-b-2 border-black pb-3 text-[11px]">
+          <div className="my-2 grid grid-cols-3 gap-2 border-b-2 border-black pb-2 text-[10.5px]">
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500">Order Ref:</span>
+              <span className="text-[8.5px] uppercase tracking-wider text-stone-500">Order Ref:</span>
               <p className="font-mono font-bold text-xs">{order.orderNumber}</p>
             </div>
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500">Booking Date:</span>
+              <span className="text-[8.5px] uppercase tracking-wider text-stone-500">Booking Date:</span>
               <p className="font-medium">
                 {new Date(order.createdAt).toLocaleDateString('en-IN', {
                   day: '2-digit',
@@ -206,32 +222,32 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
               </p>
             </div>
             <div>
-              <span className="text-[9px] uppercase tracking-wider text-stone-500">Payment Status:</span>
-              <p className="font-bold uppercase text-black">
+              <span className="text-[8.5px] uppercase tracking-wider text-stone-500">Payment Status:</span>
+              <p className="font-bold uppercase text-black text-[10px]">
                 {isPrepaid ? 'PREPAID — DO NOT COLLECT CASH' : 'COLLECT CASH ON DELIVERY'}
               </p>
             </div>
           </div>
 
           {/* Items Manifest Table */}
-          <div className="border-b-2 border-black pb-3">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-stone-600">
+          <div className="border-b-2 border-black pb-2">
+            <span className="text-[8.5px] font-bold uppercase tracking-widest text-stone-600">
               PARCEL MANIFEST & CONTENTS:
             </span>
-            <table className="mt-1.5 w-full text-left text-[11px]">
+            <table className="mt-1 w-full text-left text-[10.5px]">
               <thead>
-                <tr className="border-b border-black text-[9px] font-bold uppercase">
-                  <th className="py-1">Item Description</th>
-                  <th className="py-1 text-center">Qty</th>
-                  <th className="py-1 text-right">Declared Value</th>
+                <tr className="border-b border-black text-[8.5px] font-bold uppercase">
+                  <th className="py-0.5">Item Description</th>
+                  <th className="py-0.5 text-center">Qty</th>
+                  <th className="py-0.5 text-right">Declared Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200">
                 {order.items.map((item) => (
                   <tr key={item.id}>
-                    <td className="py-1 font-medium">{item.productNameSnapshot}</td>
-                    <td className="py-1 text-center font-mono">× {item.quantity}</td>
-                    <td className="py-1 text-right text-stone-600">—</td>
+                    <td className="py-0.5 font-medium">{item.productNameSnapshot}</td>
+                    <td className="py-0.5 text-center font-mono">× {item.quantity}</td>
+                    <td className="py-0.5 text-right text-stone-600">—</td>
                   </tr>
                 ))}
               </tbody>
@@ -239,7 +255,7 @@ export function ShippingLabelModal({ order, onClose }: ShippingLabelModalProps) 
           </div>
 
           {/* Footer Notice */}
-          <div className="mt-3 flex items-center justify-between text-[10px] text-stone-600">
+          <div className="mt-2 flex items-center justify-between text-[9.5px] text-stone-600">
             <span>Dispatched via India Post Speed Post Network</span>
             <span className="font-bold text-black">
               Total Declared Value: ₹{(order.grandTotalCents / 100).toLocaleString('en-IN')}
