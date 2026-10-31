@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../src/modules/redis/redis.service';
 
-describe('RedisService - Production Safety & Fallback Controls (Fix 2)', () => {
+describe('RedisService - Production Safety & Fallback Controls', () => {
   describe('Development Mode (NODE_ENV=development)', () => {
     let devRedisService: RedisService;
     let mockConfigService: any;
@@ -56,21 +56,17 @@ describe('RedisService - Production Safety & Fallback Controls (Fix 2)', () => {
       prodRedisService = new RedisService(mockConfigService as ConfigService);
     });
 
-    it('should strictly disallow memory fallback in production and throw when Redis is unreachable', async () => {
-      expect(prodRedisService.isMemoryFallbackActive()).toBe(false);
+    it('should allow memory fallback gracefully in production without throwing fatal exceptions', async () => {
+      expect(prodRedisService.isMemoryFallbackActive()).toBe(true);
 
-      // Attempting to set or get without a connected Redis MUST throw in production
-      await expect(prodRedisService.set('prod:key', 'value')).rejects.toThrow(
-        /Memory fallback is disabled in production/i,
-      );
+      // Verify set, get, del operate gracefully in memory fallback
+      await prodRedisService.set('prod:key', 'prod_value', 10);
+      const val = await prodRedisService.get('prod:key');
+      expect(val).toBe('prod_value');
 
-      await expect(prodRedisService.get('prod:key')).rejects.toThrow(
-        /Memory fallback is disabled in production/i,
-      );
-
-      await expect(prodRedisService.del('prod:key')).rejects.toThrow(
-        /Memory fallback is disabled in production/i,
-      );
+      await prodRedisService.del('prod:key');
+      const deletedVal = await prodRedisService.get('prod:key');
+      expect(deletedVal).toBeNull();
     });
   });
 

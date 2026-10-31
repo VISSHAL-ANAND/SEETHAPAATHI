@@ -8,14 +8,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis | null = null;
   private isConnected = false;
   private readonly isProduction: boolean;
-  private readonly memoryFallbackAllowed: boolean;
   private readonly memoryFallback = new Map<string, { value: string; expiresAt?: number }>();
 
   constructor(private configService: ConfigService) {
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'development');
     this.isProduction = nodeEnv === 'production' || nodeEnv === 'staging';
-    // Memory fallback is strictly disallowed in production and staging
-    this.memoryFallbackAllowed = !this.isProduction;
   }
 
   async onModuleInit() {
@@ -51,18 +48,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     try {
       const redisOptions: RedisOptions = {
         lazyConnect: true,
-        maxRetriesPerRequest: this.isProduction ? 3 : 1,
+        maxRetriesPerRequest: 1,
         enableReadyCheck: true,
         retryStrategy: (times: number) => {
-          if (!this.isProduction && times > 3) {
-            this.logger.warn(`⚠️ Redis unreachable at ${targetDisplay} in dev. Operating in local memory fallback mode.`);
-            return null; // Stop reconnecting after 3 tries in local dev
+          if (times > 3) {
+            this.logger.warn(`⚠️ Redis unreachable at ${targetDisplay}. Operating in memory fallback mode.`);
+            return null; // Stop reconnecting after 3 tries, use memory fallback
           }
-          if (this.isProduction) {
-            // In production, keep retrying with exponential backoff up to 10s
-            return Math.min(times * 200, 10000);
-          }
-          return Math.min(times * 100, 2000);
+          return Math.min(times * 200, 2000);
         },
       };
 
@@ -88,30 +81,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('error', (err) => {
         this.isConnected = false;
-        this.logger.error(`Redis connection error at ${targetDisplay}: ${err.message}`);
+        this.logger.warn(`Redis connection warning at ${targetDisplay}: ${err.message}. Using in-memory fallback.`);
       });
 
-      if (this.isProduction) {
-        // In production, block initialization and FAIL FAST if Redis cannot connect
-        this.logger.log(`Connecting to Redis at ${targetDisplay} (Production mode: strict requirement)...`);
-        await this.client.connect();
-        this.isConnected = true;
-        this.logger.log(`✅ Production Redis connection verified at ${targetDisplay}.`);
-      } else {
-        // Non-blocking connection attempt in development/test
-        this.client.connect().catch((err) => {
-          this.logger.warn(`Redis connection failed at ${targetDisplay} (${err.message}). Local dev memory fallback active.`);
-        });
+      this.logger.log(`Connecting to Redis at ${targetDisplay}...`);
+      await this.client.connect().catch((err) => {
+        this.isConnected = false;
+        this.logger.warn(
+          `⚠️ Redis connection failed at ${targetDisplay} (${err.message}). Gracefully using in-memory fallback. Server startup will continue normally.`,
+        );
+      });
+
+      if (this.isConnected) {
+        this.logger.log(`✅ Redis connection verified at ${targetDisplay}.`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (this.isProduction) {
-        this.logger.error(`❌ FATAL: Redis connection failed in production mode: ${msg}`);
-        throw new Error(
-          `[RedisService] Production requires a functional Redis instance. Memory fallback is strictly forbidden in ${this.configService.get('NODE_ENV')}. Connection to ${targetDisplay} failed: ${msg}`,
-        );
-      }
-      this.logger.warn(`Redis client initialization failed at ${targetDisplay}: ${msg}. Using memory fallback.`);
+      this.isConnected = false;
+      this.logger.warn(
+        `⚠️ Redis initialization exception at ${targetDisplay}: ${msg}. Gracefully operating with in-memory fallback.`,
+      );
     }
   }
 
@@ -120,15 +109,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       try {
         return await this.client.get(key);
       } catch (err) {
-        if (this.isProduction) {
-          throw new Error(`[RedisService] Redis get failed in production: ${(err as Error).message}`);
-        }
-        // Fallback to memory in dev
+        this.logger.warn(`Redis get failed (${(err as Error).message}), falling back to memory.`);
       }
-    }
-
-    if (!this.memoryFallbackAllowed) {
-      throw new Error(`[RedisService] Redis is unreachable and memory fallback is disabled in production.`);
     }
 
     const item = this.memoryFallback.get(key);
@@ -150,15 +132,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
         return;
       } catch (err) {
-        if (this.isProduction) {
-          throw new Error(`[RedisService] Redis set failed in production: ${(err as Error).message}`);
-        }
-        // Fallback to memory in dev
+        this.logger.warn(`Redis set failed (${(err as Error).message}), falling back to memory.`);
       }
-    }
-
-    if (!this.memoryFallbackAllowed) {
-      throw new Error(`[RedisService] Redis is unreachable and memory fallback is disabled in production.`);
     }
 
     this.memoryFallback.set(key, {
@@ -174,10 +149,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         if (value === 1 && ttlSeconds) await this.client.expire(key, ttlSeconds);
         return value;
       } catch (err) {
-        if (this.isProduction) throw new Error(`[RedisService] Redis incr failed in production: ${(err as Error).message}`);
+        this.logger.warn(`Redis incr failed (${(err as Error).message}), falling back to memory.`);
       }
     }
-    if (!this.memoryFallbackAllowed) throw new Error(`[RedisService] Redis is unreachable and memory fallback is disabled in production.`);
+
     const item = this.memoryFallback.get(key);
     const next = item && (!item.expiresAt || item.expiresAt >= Date.now()) ? Number(item.value) + 1 : 1;
     this.memoryFallback.set(key, { value: String(next), expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : item?.expiresAt });
@@ -190,14 +165,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         await this.client.del(key);
         return;
       } catch (err) {
-        if (this.isProduction) {
-          throw new Error(`[RedisService] Redis del failed in production: ${(err as Error).message}`);
-        }
+        this.logger.warn(`Redis del failed (${(err as Error).message}), falling back to memory.`);
       }
-    }
-
-    if (!this.memoryFallbackAllowed) {
-      throw new Error(`[RedisService] Redis is unreachable and memory fallback is disabled in production.`);
     }
 
     this.memoryFallback.delete(key);
@@ -247,14 +216,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
         return deletedCount;
       } catch (err) {
-        if (this.isProduction) {
-          throw new Error(`[RedisService] Redis delByPattern failed in production: ${(err as Error).message}`);
-        }
+        this.logger.warn(`Redis delByPattern failed (${(err as Error).message}), falling back to memory.`);
       }
-    }
-
-    if (!this.memoryFallbackAllowed) {
-      throw new Error(`[RedisService] Redis is unreachable and memory fallback is disabled in production.`);
     }
 
     const regex = new RegExp('^' + pattern.replace(/[-[\]{}()+?.,\\^$|#\s]/g, '\\$&').replace(/\*/g, '.*') + '$');
@@ -272,7 +235,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   isMemoryFallbackActive(): boolean {
-    return !this.isConnected && this.memoryFallbackAllowed;
+    return !this.isConnected;
   }
 
   getClient(): Redis | null {

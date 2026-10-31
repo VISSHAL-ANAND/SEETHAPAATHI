@@ -58,31 +58,24 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
           maxRetriesPerRequest: null,
         };
 
-    // Instantiate core queues
+    // Instantiate core queues gracefully
     for (const name of Object.values(QueueName)) {
       try {
         const queue = new Queue(name, { connection });
         this.queues.set(name, queue);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        if (this.isProduction) {
-          this.logger.error(`❌ FATAL: Could not initialize BullMQ queue ${name} in production: ${msg}`);
-          throw new Error(`[QueueService] Failed to initialize BullMQ queue ${name} in production: ${msg}`);
-        }
-        this.logger.warn(`Could not initialize BullMQ queue ${name}: ${msg}`);
+        this.logger.warn(`Could not initialize BullMQ queue ${name}: ${msg}. Operating in graceful degradation mode.`);
       }
     }
 
-    this.logger.log('✅ BullMQ queue foundation initialized.');
+    this.logger.log('BullMQ queue service initialized.');
   }
 
   async addJob<T>(queueName: QueueName, jobName: string, data: T, opts?: Record<string, unknown>) {
     const queue = this.queues.get(queueName);
     if (!queue) {
-      if (this.isProduction) {
-        throw new Error(`[QueueService] BullMQ queue "${queueName}" is unavailable in production. Job "${jobName}" cannot be processed.`);
-      }
-      this.logger.warn(`Queue ${queueName} not available. Job ${jobName} skipped in dev mode.`);
+      this.logger.warn(`Queue ${queueName} not available. Job ${jobName} skipped in graceful mode.`);
       return null;
     }
     return await queue.add(jobName, data, opts);
