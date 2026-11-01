@@ -73,13 +73,18 @@ Initial confirmed CI baseline:
 - Production environment validation rejects common placeholder credentials and placeholder seller details.
 - Sitemap now fetches active products from the public catalog rather than hardcoding a small product list.
 
-### Phase 2 — returns and refunds (in progress)
+### Phase 2 — returns and refunds (automated CI verified)
 - `apps/api/src/modules/returns/return.service.ts`: completed returns now remain included in cumulative returned-quantity accounting, preventing a customer from returning the same purchased units again after a previous return completes.
 - `apps/api/src/modules/returns/refund.service.ts`: refund idempotency keys are now bound to the original order, amount, reason, and return ID. Reuse with different request details fails with `REFUND_IDEMPOTENCY_KEY_REUSED` before contacting Razorpay.
 - Added `return.service.spec.ts` and `refund.service.spec.ts` regression tests.
 - These changes are committed directly to `main`.
 - GitHub Actions run #142 passed on commit `7ca5e2c1c5302b879ed4450c5f7ba6958510b4db`, including the API test suite containing both new regression tests. Vercel separately reported a deployment rate limit; this is not a GitHub Actions test/build failure.
 - Phase 2 automated CI verification is complete. Dedicated database concurrency tests and live Razorpay refund/reconciliation tests remain open.
+
+### Phase 3 — shipping serviceability (foundation in progress)
+- Added `apps/api/src/modules/fulfillment/shipping.service.spec.ts` covering malformed PIN rejection, whitespace normalization, and fail-closed handling of valid PINs without a configured provider.
+- `GET /shipping/serviceability` now exposes `verified` at the top level in addition to the nested `data.verified` value.
+- No live India Post/CEPt integration has been activated. Route-level checks require confirmed CEPt onboarding/API contract, public egress IP allowlisting, merchant origin PIN, and parcel weight/dimensions. Keep serviceability unverified until these are available.
 
 ## Verification status
 
