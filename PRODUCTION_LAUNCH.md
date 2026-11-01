@@ -96,7 +96,20 @@ The Compose uploads volume is suitable for a single Docker host. It is not share
 
 The Compose file is a single-host deployment baseline. Do not scale API or web replicas with fixed host port mappings unless a load balancer/reverse proxy and shared storage are configured. No 5,000-concurrent-user capacity claim is made without representative load testing.
 
-## 6. Razorpay configuration
+## 6. Render Blueprint deployment
+
+The repository's `render.yaml` defines PostgreSQL, Redis Key Value, the API and the web service. The Blueprint expects you to supply the production secrets and statutory seller details through the Render Dashboard.
+
+- Set `NEXT_PUBLIC_API_URL` to the browser-facing API URL ending in `/api/v1`.
+- Set `INTERNAL_API_URL` to the API URL reachable by the web service during Next.js build and runtime, ending in `/api/v1`.
+- Set `CORS_ORIGIN` on the API and `UPLOAD_ALLOWED_ORIGINS` on the web service to the exact trusted storefront origin(s).
+- Configure the actual Razorpay live keys, webhook secret, Resend key, verified sender, and seller legal/GST/address values.
+- The web service has a 1 GB persistent disk mounted at the upload directory and is intentionally configured for one instance. Render persistent disks are single-instance and prevent horizontal scaling/zero-downtime deploys; use shared object storage before scaling the web service. See the [Render persistent disk limitations](https://render.com/docs/disks).
+- The API is also configured as one instance by default. Increase API instances only after load testing and confirming Redis/database capacity. Render autoscaling requires an eligible workspace plan; see [Render scaling](https://render.com/docs/scaling).
+
+The repository contains a Blueprint definition only. No Render service for this repository was found in the connected Render workspace during this audit, and no deployment was triggered.
+
+## 7. Razorpay configuration
 
 1. Configure the live Razorpay key ID and secret in the API environment.
 2. Configure the public key ID in the web environment.
@@ -112,19 +125,19 @@ The Compose file is a single-host deployment baseline. Do not scale API or web r
 
 Payment state is finalized by the signed server-side webhook, not by the browser success callback. A captured payment whose full inventory allocation fails is cancelled and entered into the refund reconciliation queue.
 
-## 7. Shipping and serviceability
+## 8. Shipping and serviceability
 
 The current shipping workflow supports admin-entered India Post tracking numbers and shipment status updates. It does not contain a verified Shiprocket integration. Do not configure Shiprocket credentials or expect automated courier booking from this code.
 
 PIN-code format validation is not a live India Post serviceability lookup. Until an authoritative serviceability provider is integrated, the storefront reports the destination as unverified and does not promise delivery dates.
 
-## 8. Upload storage
+## 9. Upload storage
 
 The admin upload endpoint requires a valid API session with `products.create` permission. It accepts PNG, JPEG, and WebP images up to 5 MB, verifies file signatures, and generates server-side filenames. SVG uploads are rejected.
 
 For a single-host Docker deployment, the Compose volume persists files across container recreation. For managed/serverless or multi-host hosting, local container storage is not sufficient; configure durable shared object storage before relying on uploaded media.
 
-## 9. Pre-launch verification
+## 10. Pre-launch verification
 
 - [ ] Configure actual seller legal name, address, state code, and GSTIN; have tax/legal details reviewed.
 - [ ] Configure production PostgreSQL and verify backups/restore procedure.
