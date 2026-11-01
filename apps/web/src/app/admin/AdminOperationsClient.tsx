@@ -111,13 +111,13 @@ export default function AdminOperationsPage() {
     setShipment(null);
     setTracking(order.trackingNumber || '');
     try {
-      const s = await fetchApi<Shipment>(`/orders/${order.id}/track?_t=${Date.now()}`, noCacheHeaders);
+      const s = await fetchApi<Shipment>(`/orders/${order.id}/track`, noCacheHeaders);
       setShipment(s);
     } catch {
       setShipment(null);
     }
     try {
-      const inv = await fetchApi<Invoice>(`/invoices/admin/order/${order.id}?_t=${Date.now()}`, noCacheHeaders);
+      const inv = await fetchApi<Invoice>(`/invoices/admin/order/${order.id}`, noCacheHeaders);
       setInvoice(inv);
     } catch {
       setInvoice(null);
@@ -129,8 +129,8 @@ export default function AdminOperationsPage() {
     setError('');
     try {
       const [o, r] = await Promise.all([
-        fetchApi<OrdersResponse>(`/orders/admin?page=1&limit=100&_t=${Date.now()}`, noCacheHeaders),
-        fetchApi<Return[]>(`/admin/returns?_t=${Date.now()}`, noCacheHeaders),
+        fetchApi<OrdersResponse>('/orders/admin?page=1&limit=50', noCacheHeaders),
+        fetchApi<Return[]>('/admin/returns', noCacheHeaders),
       ]);
       setOrders(o.items);
       setReturns(r);
