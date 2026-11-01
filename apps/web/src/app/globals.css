@@ -6,8 +6,8 @@
   --color-hairline: #E3DFD7;
   --color-terroir: #241C18;
   --color-saffron: #B8860B;
-  --font-serif: var(--font-serif), "Cormorant Garamond", "Newsreader", serif;
-  --font-sans: var(--font-sans), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 :root {
