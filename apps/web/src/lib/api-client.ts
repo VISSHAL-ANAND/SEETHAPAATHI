@@ -55,6 +55,10 @@ export async function fetchWithRetry(
       if (attempt < retries && retrySafe) {
         console.warn(`[fetchWithRetry] Attempt ${attempt + 1} to ${url} errored (${err?.name || err?.message}). Retrying...`);
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      } else {
+        // A network failure after a mutation may still mean the server committed it.
+        // Do not replay unsafe requests without an explicit idempotency key.
+        break;
       }
     }
   }
