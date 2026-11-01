@@ -292,6 +292,55 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       });
     });
 
+    it('queues a refund when a captured payment races with an already-cancelled order', async () => {
+      razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({});
+      prisma.payment.findUnique.mockResolvedValue({
+        id: 'pay_db_cancel_race',
+        orderId: 'order_db_cancel_race',
+        gatewayOrderId: 'order_rzp_cancel_race',
+        amountCents: 25000,
+        currency: 'INR',
+        status: PaymentStatus.PENDING,
+        order: {
+          id: 'order_db_cancel_race',
+          status: OrderStatus.CANCELLED,
+          userId: 'user_1',
+          items: [{ variantId: 'v1', quantity: 2 }],
+        },
+      });
+      prisma.payment.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.processRazorpayWebhook(
+        JSON.stringify(validPayload),
+        'valid_sig',
+        'evt_cap_cancel_race',
+      );
+
+      expect(result.status).toBe(OrderStatus.CANCELLED);
+      expect(inventoryService.cancelReservationsBySession).toHaveBeenCalledWith('order_db_cancel_race', prisma);
+      expect(inventoryService.commitReservationsBySession).not.toHaveBeenCalled();
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+      expect(prisma.refund.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          orderId: 'order_db_cancel_race',
+          paymentId: 'pay_db_cancel_race',
+          amountCents: 25000,
+          status: 'PENDING',
+          reason: 'REFUND_REQUIRED_OTHER',
+          idempotencyKey: 'auto-refund-order-not-pending:pay_db_cancel_race',
+        }),
+      });
+      expect(prisma.paymentTransaction.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          paymentId: 'pay_db_cancel_race',
+          eventType: 'payment.captured.order_not_pending',
+        }),
+      });
+      expect(prisma.paymentWebhookEvent.update).toHaveBeenCalled();
+    });
+
     it('settles mixed active and expired reservations without leaving any order line unallocated', async () => {
       razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
       prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
