@@ -1,7 +1,7 @@
 # Engineering Tasks
 
 ## Must complete before production
-- [ ] Re-check latest CI on current `main`; fix API tests/typecheck/lint/build and web typecheck/lint/build failures without bypassing checks.
+- [x] Re-check CI through Phase 3 foundation commit `95a4d1f` (run #150 passed); re-check again after subsequent code changes.
 - [ ] Run a clean-database migration deployment against the exact current commit.
 - [ ] Validate the production environment with real credentials and actual seller/GST details supplied by the business.
 - [ ] Configure durable shared object storage for uploads if deploying to serverless or multiple hosts.
@@ -19,9 +19,10 @@
 - [ ] Verify refund reconciliation retries, gateway timeout recovery, partial refunds, full refunds, and multiple captured payment attempts.
 
 ## Product/integration follow-ups
-- [ ] Obtain CEPt integration approval/current contract and whitelist the production API egress IP.
+- [ ] Obtain CEPt integration approval/current contract and whitelist the production API egress IP (onboarding procedure documented in `docs/runbooks/india-post-cept-onboarding.md`).
 - [ ] Confirm merchant origin PIN and package weight/dimensions required for route-level Speed Post tariff/serviceability checks.
 - [ ] Implement the India Post provider adapter only after those prerequisites are verified; keep unknown/error outcomes fail-closed.
+- [x] Document the official public CEPt onboarding workflow, preparation checklist, technical questions, and implementation gate.
 - [x] Add regression tests proving malformed PINs are rejected and valid PIN format alone never implies serviceability.
 - [x] Expose the serviceability `verified` flag at the top-level API response.
 - [ ] Review remaining return/refund and fulfillment transitions for complete automated regression coverage.
