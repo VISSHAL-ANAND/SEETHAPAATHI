@@ -54,6 +54,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
       setPincodeResult({
         checked: true,
         serviceable: false,
+        verified: true,
         message: 'Please enter a valid 6-digit Indian PIN code',
       });
       return;
@@ -381,7 +382,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-[#181513]/65">
-                Orders dispatched nationwide via India Post Speed Post.
+                India Post Speed Post is our current dispatch carrier. PIN-code serviceability is confirmed manually before dispatch.
               </p>
               <form onSubmit={checkPincodeServiceability} className="mt-3 flex gap-2">
                 <input
