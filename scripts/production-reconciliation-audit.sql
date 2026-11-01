@@ -34,9 +34,9 @@ GROUP BY o.id, o.status, oi.id, oi.variant_id, oi.quantity
 HAVING COALESCE(SUM(ir.quantity), 0) < oi.quantity
 ORDER BY o.created_at ASC, o.id, oi.variant_id;
 
--- 2) Captured payments attached to cancelled/failed/refunded orders where the
---    processed refund total does not cover the captured payment. Pending and
---    failed refund rows are reported separately for manual gateway reconciliation.
+-- 2) Captured payments attached to cancelled/failed/refunded orders, plus
+--    refunded payments whose processed refund total does not exactly match the
+--    captured amount. Pending and failed rows are reported for manual reconciliation.
 SELECT
   p.id AS payment_id,
   o.id AS order_id,
