@@ -63,6 +63,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
         serviceable: boolean;
         carrier: string;
         estimatedDays: string;
+        message?: string;
       }>('/shipping/serviceability?pincode=' + cleanPin);
 
       if (res && res.serviceable) {
