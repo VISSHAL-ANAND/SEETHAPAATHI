@@ -9,7 +9,7 @@ Last updated: 2026-11-01
 ## Current product state
 - Next.js storefront/admin, NestJS API, PostgreSQL/Prisma, Redis/BullMQ, Razorpay.
 - Shipping currently supports manual India Post dispatch/tracking.
-- PIN-code serviceability is intentionally reported as unverified until a live carrier source is configured.
+- PIN-code serviceability is intentionally reported as unverified until a live carrier source is configured. The API now exposes `verified` both at the response top level and in `data`.
 
 ## Repair checkpoint
 The initial audit found Prisma migration drift, failing CI tests, unauthenticated image upload, unsafe cancellation/refund behavior, partial inventory settlement, premature cart clearing, state synchronization issues, insecure token persistence, Redis TLS/eviction issues, frontend build bypasses, and stale deployment documentation.
@@ -37,3 +37,8 @@ Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They inclu
 - Actual seller legal name, registered address and valid GSTIN.
 - Shared object storage if the hosting platform is multi-host or serverless.
 - A live carrier PIN-serviceability source if delivery estimates are required.
+
+## Phase 3 checkpoint — shipping serviceability foundation
+- Added `shipping.service.spec.ts` regression coverage for malformed PIN rejection, whitespace normalization, and the fail-closed response for valid PINs when no live provider is configured.
+- Updated `GET /shipping/serviceability` to expose `verified` at the top level as well as inside `data`, so clients can distinguish PIN syntax validation from carrier-confirmed serviceability.
+- This is foundation work only: no live CEPt/India Post request is enabled. Live route checks remain blocked on CEPt onboarding/IP allowlisting, confirmed current API contract, origin PIN, and parcel weight/dimensions.
