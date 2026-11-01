@@ -27,12 +27,14 @@ describe('RefundService idempotency', () => {
     service = new RefundService(prisma, razorpay, {} as any);
   });
 
-  it.each([
+  const mismatches: Array<[string, { orderId?: string; amountCents?: number; reason?: RefundReason; returnId?: string }]> = [
     ['orderId', { orderId: 'order-2' }],
     ['amountCents', { amountCents: 1300 }],
     ['reason', { reason: RefundReason.RETURN }],
     ['returnId', { returnId: 'return-1' }],
-  ])('rejects reuse of the same key with a different %s', async (_field, change) => {
+  ];
+
+  it.each(mismatches)('rejects reuse of the same key with a different %s', async (_field, change) => {
     await expect(
       service.process(
         change.orderId ?? 'order-1',
