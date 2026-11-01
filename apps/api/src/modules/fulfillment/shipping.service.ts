@@ -76,6 +76,14 @@ export class ShippingService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Serialize concurrent dispatch requests for the same order.
+      const lockedOrders = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE
+      `;
+      if (lockedOrders.length === 0) {
+        throw new NotFoundException({ error: 'ORDER_NOT_FOUND', message: 'Order not found' });
+      }
+
       const order = await tx.order.findUnique({
         where: { id: orderId },
         include: { items: true },
@@ -83,6 +91,18 @@ export class ShippingService {
 
       if (!order) {
         throw new NotFoundException({ error: 'ORDER_NOT_FOUND', message: 'Order not found' });
+      }
+
+      const shippableStatuses: OrderStatus[] = [
+        OrderStatus.PAID,
+        OrderStatus.PROCESSING,
+        OrderStatus.PACKED,
+      ];
+      if (!shippableStatuses.includes(order.status)) {
+        throw new BadRequestException({
+          error: 'ORDER_NOT_SHIPPABLE',
+          message: `Order in status ${order.status} cannot be dispatched.`,
+        });
       }
 
       const now = new Date();
@@ -346,7 +366,11 @@ export class ShippingService {
           : undefined;
 
       if (mappedOrderStatus) {
-        await tx.order.updateMany({
+        const orderBeforeUpdate = await tx.order.findUnique({
+          where: { id: s.orderId },
+          select: { status: true },
+        });
+        const orderUpdate = await tx.order.updateMany({
           where: {
             id: s.orderId,
             status: {
@@ -366,6 +390,17 @@ export class ShippingService {
             ...(mappedOrderStatus === OrderStatus.SHIPPED ? { shippedAt: now } : {}),
           },
         });
+        if (orderUpdate.count === 1 && orderBeforeUpdate && orderBeforeUpdate.status !== mappedOrderStatus) {
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId: s.orderId,
+              oldStatus: orderBeforeUpdate.status,
+              newStatus: mappedOrderStatus,
+              reason: `SHIPMENT_STATUS_${status}`,
+              changedBy: 'SHIPMENT_TRACKING',
+            },
+          });
+        }
       }
 
       return shipment;
