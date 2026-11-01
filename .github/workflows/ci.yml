@@ -41,4 +41,6 @@ jobs:
       - run: npm run lint --workspace=@seethapaati/api
       - run: npm test --workspace=@seethapaati/api -- --runInBand
       - run: npm run build --workspace=@seethapaati/api
+      - run: npm run typecheck --workspace=@seethapaati/web
+      - run: npm run lint --workspace=@seethapaati/web
       - run: npm run build --workspace=@seethapaati/web
