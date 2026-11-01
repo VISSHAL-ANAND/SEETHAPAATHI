@@ -9,6 +9,7 @@ services:
     plan: starter
     region: singapore
     numInstances: 1
+    autoDeployTrigger: checksPass
     buildCommand: npm ci && npm run build:contracts && npm run build:api
     startCommand: npm run start:api
     healthCheckPath: /api/v1/health/ready
@@ -73,6 +74,7 @@ services:
     plan: starter
     region: singapore
     numInstances: 1
+    autoDeployTrigger: checksPass
     buildCommand: npm ci && npm run build:contracts && npm run build:web
     startCommand: npm run start:web
     disk:
