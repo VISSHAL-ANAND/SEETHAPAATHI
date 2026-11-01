@@ -43,7 +43,7 @@ export class AuthController {
     await this.enforceRateLimit(req, 'register');
     const result = await this.authService.register(dto);
     this.setAuthCookie(res, result.accessToken, result.expiresIn);
-    const { accessToken: _accessToken, ...session } = result;
+    const session = { user: result.user, expiresIn: result.expiresIn };
     return {
       success: true,
       data: session,
