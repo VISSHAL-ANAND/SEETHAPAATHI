@@ -43,6 +43,12 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       inventoryMovement: {
         create: jest.fn(),
       },
+      inventoryReservation: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      refund: {
+        create: jest.fn(),
+      },
       couponUsage: {
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -198,6 +204,10 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       prisma.order.updateMany.mockResolvedValue({ count: 1 });
       prisma.payment.updateMany.mockResolvedValue({ count: 1 });
       inventoryService.commitReservationsBySession.mockResolvedValue(1);
+      prisma.inventoryReservation.findMany.mockResolvedValue([
+        { variantId: 'v1', quantity: 2, status: 'ACTIVE' },
+      ]);
+      prisma.$queryRaw.mockResolvedValue([{ quantity_available: 10, quantity_reserved: 2 }]);
 
       const result = await service.processRazorpayWebhook(
         JSON.stringify(validPayload),
@@ -275,6 +285,56 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       });
     });
 
+    it('settles mixed active and expired reservations without leaving any order line unallocated', async () => {
+      razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({});
+      prisma.payment.findUnique.mockResolvedValue({
+        id: 'pay_db_mixed',
+        orderId: 'order_db_mixed',
+        gatewayOrderId: 'order_rzp_99',
+        amountCents: 25000,
+        currency: 'INR',
+        status: PaymentStatus.PENDING,
+        order: {
+          id: 'order_db_mixed',
+          status: OrderStatus.PENDING_PAYMENT,
+          userId: 'user_1',
+          items: [
+            { variantId: 'v1', quantity: 2 },
+            { variantId: 'v2', quantity: 3 },
+          ],
+        },
+      });
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      prisma.payment.updateMany.mockResolvedValue({ count: 1 });
+      inventoryService.commitReservationsBySession.mockResolvedValue(1);
+      prisma.inventoryReservation.findMany.mockResolvedValue([
+        { variantId: 'v1', quantity: 2, status: 'ACTIVE' },
+        { variantId: 'v2', quantity: 3, status: 'EXPIRED' },
+      ]);
+      prisma.$queryRaw.mockResolvedValue([{ quantity_available: 10, quantity_reserved: 0 }]);
+      prisma.$executeRaw.mockResolvedValue(1);
+
+      const result = await service.processRazorpayWebhook(
+        JSON.stringify(validPayload),
+        'valid_sig',
+        'evt_cap_mixed',
+      );
+
+      expect(result.status).toBe(OrderStatus.PAID);
+      expect(inventoryService.commitReservationsBySession).toHaveBeenCalledWith('order_db_mixed', prisma);
+      expect(prisma.inventoryMovement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          variantId: 'v2',
+          delta: -3,
+          reason: 'SALE_COMMITTED_POST_EXPIRY',
+          referenceId: 'order_db_mixed',
+        }),
+      });
+      expect(prisma.refund.create).not.toHaveBeenCalled();
+    });
+
     it('HIGH-03: late payment post-expiry cancels order for refund when stock is unavailable', async () => {
       razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
       prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
@@ -325,6 +385,16 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
           reason: 'PAYMENT_CAPTURED_OUT_OF_STOCK_REQUIRES_REFUND',
         }),
       });
+      expect(prisma.refund.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          orderId: 'order_db_late_oos',
+          paymentId: 'pay_db_late_oos',
+          amountCents: 25000,
+          status: 'PENDING',
+          reason: 'REFUND_REQUIRED_OTHER',
+          idempotencyKey: 'auto-refund-out-of-stock:pay_db_late_oos',
+        }),
+      });
     });
 
     it('HIGH-04: records coupon usage and increments coupon usageCount on successful payment capture', async () => {
@@ -349,6 +419,10 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       prisma.order.updateMany.mockResolvedValue({ count: 1 });
       prisma.payment.updateMany.mockResolvedValue({ count: 1 });
       inventoryService.commitReservationsBySession.mockResolvedValue(1);
+      prisma.inventoryReservation.findMany.mockResolvedValue([
+        { variantId: 'v1', quantity: 1, status: 'ACTIVE' },
+      ]);
+      prisma.$queryRaw.mockResolvedValue([{ quantity_available: 10, quantity_reserved: 1 }]);
       prisma.couponUsage.findFirst.mockResolvedValue(null); // Not recorded yet
 
       await service.processRazorpayWebhook(
