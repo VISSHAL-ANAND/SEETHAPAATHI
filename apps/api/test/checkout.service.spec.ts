@@ -426,8 +426,10 @@ describe('CheckoutService - Orchestration & Integrity', () => {
         }),
       );
 
-      // 3. User cart cleared
-      expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({ where: { cartId } });
+      // 3. Cart is retained until the authoritative payment-captured webhook.
+      expect(prisma.cartItem.deleteMany).not.toHaveBeenCalled();
+      const createdOrderData = prisma.order.create.mock.calls[0][0].data;
+      expect(JSON.parse(createdOrderData.notes).cartId).toBe(cartId);
 
       // 4. Razorpay order created with auto-capture
       expect(razorpayAdapter.createOrder).toHaveBeenCalledWith({
