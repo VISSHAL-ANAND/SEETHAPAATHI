@@ -297,6 +297,16 @@ export class WebhookService {
         },
       });
 
+      // Lock reservation rows before reading them so the expiry worker cannot
+      // release a hold between the reconciliation read and the commit operation.
+      await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id
+        FROM inventory_reservations
+        WHERE checkout_session_id = ${payment.orderId}
+        ORDER BY variant_id ASC, id ASC
+        FOR UPDATE
+      `;
+
       // 2. Reconcile every order line against its committed and active reservations.
       // This is deliberately item/quantity based: a non-zero reservation count does
       // not prove that every line in a multi-item order is covered.
