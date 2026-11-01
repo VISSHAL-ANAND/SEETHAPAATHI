@@ -111,17 +111,14 @@ export const EnvSchema = z
       // Production seller identity/address configuration must be explicitly supplied.
       const sellerPlaceholdersUsed =
         data.SELLER_LEGAL_NAME === SELLER_CONFIG_PLACEHOLDERS.legalName ||
-        data.SELLER_TRADE_NAME === SELLER_CONFIG_PLACEHOLDERS.tradeName ||
         data.SELLER_ADDRESS_LINE1 === SELLER_CONFIG_PLACEHOLDERS.addressLine1 ||
         data.SELLER_CITY === SELLER_CONFIG_PLACEHOLDERS.city ||
-        data.SELLER_STATE === SELLER_CONFIG_PLACEHOLDERS.state ||
-        data.SELLER_STATE_CODE === SELLER_CONFIG_PLACEHOLDERS.stateCode ||
         data.SELLER_PINCODE === SELLER_CONFIG_PLACEHOLDERS.pincode;
       if (sellerPlaceholdersUsed) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['SELLER_LEGAL_NAME'],
-          message: 'Production seller legal/trade name, address, state code and pincode must be explicitly configured; development placeholders are not allowed.',
+          message: 'Production seller legal name and registered address, city and pincode must be explicitly configured; development placeholders are not allowed.',
         });
       }
 
