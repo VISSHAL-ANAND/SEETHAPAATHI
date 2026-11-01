@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    const contentLength = Number(req.headers.get('content-length') || 0);
+    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES + 64 * 1024) {
+      return NextResponse.json(
+        { success: false, error: 'Upload request exceeds the 5MB image limit' },
+        { status: 413 },
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file');
 
