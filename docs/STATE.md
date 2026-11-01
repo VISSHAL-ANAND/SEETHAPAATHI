@@ -29,7 +29,7 @@ Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They inclu
 - Clean-database Prisma migration deployment and API checks passed on intermediate commits. The merchandising repair is now a new forward-only migration; the historical empty migration is preserved.
 - A mixed active/expired reservation regression test passed on an intermediate commit.
 - Web build passed after removing the build-time Google Fonts dependency.
-- GitHub Actions run #142 passed on the latest documented `main` commit; Vercel deployment status is separately rate-limited and does not affect the CI workflow result.
+- GitHub Actions run #150 passed on commit `95a4d1fbd1496f44a83255a9d17fae1fd3dc8ffa` (18 workflow steps, including clean migrations, API/web checks, Docker builds, and production Compose validation). Subsequent documentation commits still require their own CI result.
 - No live Razorpay transaction, production deployment, visual browser QA, or load test has been performed.
 
 ## External dependencies
@@ -42,3 +42,9 @@ Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They inclu
 - Added `shipping.service.spec.ts` regression coverage for malformed PIN rejection, whitespace normalization, and the fail-closed response for valid PINs when no live provider is configured.
 - Updated `GET /shipping/serviceability` to expose `verified` at the top level as well as inside `data`, so clients can distinguish PIN syntax validation from carrier-confirmed serviceability.
 - This is foundation work only: no live CEPt/India Post request is enabled. Live route checks remain blocked on CEPt onboarding/IP allowlisting, confirmed current API contract, origin PIN, and parcel weight/dimensions.
+
+## Phase 3 checkpoint — CEPt onboarding research
+- Added `docs/runbooks/india-post-cept-onboarding.md` with the documented Department of Posts Circle/Division → HDMS ticket → CEPT testing → production rollout process, preparation checklist, questions for CEPT, and implementation gates.
+- Public official SOP reviewed: dated 04 August 2021. It says the customer approaches a Circle Marketing Executive; the ME shares the latest API document and raises the request through Circle/Division, which raises the HDMS integration ticket. The ticket records customer details, postal services, API/SFTP mode, Customer ID, and customer public IP. CEPT then coordinates testing and records production rollout.
+- The SOP lists `salesndist.cept@indiapost.gov.in` for operational issues initiating tickets. Confirm this contact and the process are still current with CEPT.
+- No private access, credentials, approval, UAT access, or production IP allowlisting have been obtained. No live adapter has been implemented or enabled. Current public documents are dated 2021; implementation remains gated on current CEPT documentation/UAT access and merchant parcel inputs.
