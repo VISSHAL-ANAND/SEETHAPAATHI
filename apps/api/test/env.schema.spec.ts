@@ -65,7 +65,15 @@ describe('EnvSchema - Configuration Validation', () => {
       SELLER_ADDRESS_LINE1: '1 Test Street',
       SELLER_CITY: 'Coimbatore',
       SELLER_PINCODE: '641001',
+      DATABASE_URL: 'postgresql://seethapaati:prod_secret_1234567890@db.example.test:5432/seethapaati?schema=public',
+      CORS_ORIGIN: 'https://store.example.test',
+      RAZORPAY_KEY_ID: 'rzp_live_ci_key_12345',
+      RAZORPAY_KEY_SECRET: 'secret_razorpay_ci_key_1234567890',
+      RAZORPAY_WEBHOOK_SECRET: 'secret_webhook_ci_key_1234567890',
       RESEND_API_KEY: 're_test_phase9_ci',
+      EMAIL_FROM: 'orders@example.test',
+      SELLER_TRADE_NAME: 'Example Pantry',
+      SELLER_STATE: 'Tamil Nadu',
     });
 
     expect(validProd.NODE_ENV).toBe('production');
