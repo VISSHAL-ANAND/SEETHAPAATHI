@@ -73,6 +73,12 @@ Initial confirmed CI baseline:
 - Production environment validation rejects common placeholder credentials and placeholder seller details.
 - Sitemap now fetches active products from the public catalog rather than hardcoding a small product list.
 
+### Phase 2 — returns and refunds (in progress)
+- `apps/api/src/modules/returns/return.service.ts`: completed returns now remain included in cumulative returned-quantity accounting, preventing a customer from returning the same purchased units again after a previous return completes.
+- `apps/api/src/modules/returns/refund.service.ts`: refund idempotency keys are now bound to the original order, amount, reason, and return ID. Reuse with different request details fails with `REFUND_IDEMPOTENCY_KEY_REUSED` before contacting Razorpay.
+- Added `return.service.spec.ts` and `refund.service.spec.ts` regression tests.
+- These changes are committed directly to `main`; CI status is not yet confirmed. Continue Phase 2 with concurrency and reconciliation coverage before sign-off.
+
 ## Verification status
 
 Do not assume the latest commit is green merely because earlier commits passed.
