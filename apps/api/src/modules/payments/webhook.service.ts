@@ -236,7 +236,10 @@ export class WebhookService {
       if (!lockedPayment) {
         throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND', message: 'Payment or order disappeared during webhook processing.' });
       }
-      if (lockedPayment.status === PaymentStatus.CAPTURED) {
+      if (
+        lockedPayment.status === PaymentStatus.CAPTURED ||
+        lockedPayment.status === PaymentStatus.REFUNDED
+      ) {
         await tx.paymentWebhookEvent.update({
           where: { eventId },
           data: { processed: true, processedAt: new Date(), processingLeaseUntil: null, processingToken: null },
