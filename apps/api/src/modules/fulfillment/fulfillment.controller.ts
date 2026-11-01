@@ -142,6 +142,7 @@ export class FulfillmentController {
     return {
       success: true,
       serviceable: data.serviceable,
+      verified: data.verified,
       carrier: data.carrier,
       estimatedDays: data.estimatedDays,
       data,
