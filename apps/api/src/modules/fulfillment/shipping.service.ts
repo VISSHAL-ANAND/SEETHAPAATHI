@@ -37,6 +37,7 @@ export interface TrackingCheckpoint {
 
 export interface IndiaPostServiceabilityResult {
   serviceable: boolean;
+  verified: boolean;
   carrier: string;
   estimatedDays: string;
   pincode?: string;
@@ -214,6 +215,7 @@ export class ShippingService {
 
     return {
       serviceable: false,
+      verified: false,
       carrier: 'India Post Speed Post',
       estimatedDays: 'Unverified',
       pincode: trimmedPincode,
