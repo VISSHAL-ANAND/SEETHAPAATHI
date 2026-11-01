@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seethapaati_secure_db_pass_2026}
       POSTGRES_DB: ${POSTGRES_DB:-seethapaati_prod}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -27,9 +27,9 @@ services:
     image: redis:7-alpine
     container_name: seethapaati-redis
     restart: always
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-seethapaati_redis_secret_2026}", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-seethapaati_redis_secret_2026}", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
