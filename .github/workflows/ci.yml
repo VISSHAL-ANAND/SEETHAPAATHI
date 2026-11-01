@@ -62,6 +62,7 @@ jobs:
           REDIS_PASSWORD: ci_redis_password_123456
           JWT_SECRET: ci_jwt_secret_with_more_than_32_characters_123456
           CORS_ORIGIN: https://store.example.test
+          UPLOAD_ALLOWED_ORIGINS: https://store.example.test
           RAZORPAY_KEY_ID: rzp_live_ci_key_123456
           RAZORPAY_KEY_SECRET: ci_razorpay_secret_123456789
           RAZORPAY_WEBHOOK_SECRET: ci_razorpay_webhook_secret_123456789
