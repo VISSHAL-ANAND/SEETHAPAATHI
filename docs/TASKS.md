@@ -14,7 +14,7 @@
 - [x] Count completed returns when calculating the remaining returnable quantity.
 - [x] Reject refund idempotency-key reuse when order, amount, reason, or return ID differs.
 - [x] Add regression tests for the two cases.
-- [ ] Verify return quantity tests and refund idempotency tests in CI.
+- [x] Verify return quantity tests and refund idempotency tests in CI (GitHub Actions run #142).
 - [ ] Add/verify PostgreSQL concurrency coverage for overlapping partial return requests and concurrent refund creation/completion.
 - [ ] Verify refund reconciliation retries, gateway timeout recovery, partial refunds, full refunds, and multiple captured payment attempts.
 
