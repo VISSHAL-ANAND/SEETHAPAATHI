@@ -19,7 +19,8 @@ LEFT JOIN inventory_reservations ir
   ON ir.checkout_session_id = o.id
  AND ir.variant_id = oi.variant_id
  AND ir.status = 'COMMITTED'
-WHERE o.status IN (
+WHERE oi.variant_id IS NOT NULL
+  AND o.status IN (
   'PAID',
   'PROCESSING',
   'PACKED',
@@ -55,6 +56,7 @@ WHERE o.status IN ('CANCELLED', 'PAYMENT_FAILED', 'REFUNDED')
   AND p.status IN ('CAPTURED', 'REFUNDED')
 GROUP BY p.id, o.id, o.status, p.status, p.amount_cents
 HAVING
-  COALESCE(SUM(r.amount_cents) FILTER (WHERE r.status = 'PROCESSED'), 0)
-    < p.amount_cents
+  p.status = 'CAPTURED'
+  OR COALESCE(SUM(r.amount_cents) FILTER (WHERE r.status = 'PROCESSED'), 0)
+    <> p.amount_cents
 ORDER BY o.created_at ASC, o.id, p.id;
