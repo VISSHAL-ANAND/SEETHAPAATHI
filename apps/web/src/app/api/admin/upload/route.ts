@@ -35,6 +35,15 @@ function detectImage(buffer: Buffer): { extension: 'png' | 'jpg' | 'webp'; mime:
 
 export async function POST(req: NextRequest) {
   try {
+    // Reject cross-origin form submissions before using the ambient session cookie.
+    const requestOrigin = req.headers.get('origin');
+    const expectedOrigin = new URL(
+      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    ).origin;
+    if (!requestOrigin || requestOrigin !== expectedOrigin) {
+      return NextResponse.json({ success: false, error: 'Invalid request origin' }, { status: 403 });
+    }
+
     // Validate the signed HttpOnly session with the API; a cookie's mere presence
     // is not proof of authentication or authorization.
     const cookie = req.headers.get('cookie');
