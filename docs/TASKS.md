@@ -10,6 +10,14 @@
 - [ ] Perform a database backup/restore drill.
 - [ ] Load-test with representative catalog, checkout and queue traffic before selecting replica counts.
 
+## Phase 2 — returns and refunds
+- [x] Count completed returns when calculating the remaining returnable quantity.
+- [x] Reject refund idempotency-key reuse when order, amount, reason, or return ID differs.
+- [x] Add regression tests for the two cases.
+- [ ] Verify return quantity tests and refund idempotency tests in CI.
+- [ ] Add/verify PostgreSQL concurrency coverage for overlapping partial return requests and concurrent refund creation/completion.
+- [ ] Verify refund reconciliation retries, gateway timeout recovery, partial refunds, full refunds, and multiple captured payment attempts.
+
 ## Product/integration follow-ups
 - [ ] Select and integrate an authoritative India Post PIN-code serviceability source; until then keep the storefront fail-closed.
 - [ ] Review remaining return/refund and fulfillment transitions for complete automated regression coverage.
