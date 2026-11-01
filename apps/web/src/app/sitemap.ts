@@ -16,7 +16,7 @@ function getCatalogApiUrl(page: number): string {
     process.env.INTERNAL_API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     `${SITE_URL}/api/v1`;
-  const apiBase = configuredApiUrl.trim().replace(/\\/+$/, '').replace(/\\/api\\/v1$/, '');
+  const apiBase = configuredApiUrl.trim().replace(/\/+$/, '').replace(/\/api\/v1$/, '');
   return `${apiBase}/api/v1/catalog/products?page=${page}&limit=${PAGE_SIZE}&sortBy=createdAt&sortDir=desc`;
 }
 
