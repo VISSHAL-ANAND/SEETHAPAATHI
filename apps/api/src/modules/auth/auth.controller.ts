@@ -108,7 +108,7 @@ export class AuthController {
   private setAuthCookie(res: Response, token: string, maxAgeSeconds: number) {
     res.cookie('access_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging',
       sameSite: 'lax',
       maxAge: maxAgeSeconds * 1000,
       path: '/',
