@@ -123,24 +123,42 @@ export class WebhookService {
       return { success: true, duplicate: true, message: 'Event is already being processed' };
     }
 
-    // 4. Dispatch based on event type
-    switch (eventType) {
-      case 'payment.captured':
-        return await this.handlePaymentCaptured(eventId, paymentEntity, payload);
+    // 4. Dispatch based on event type. If processing fails before the
+    // settlement transaction commits, release this exact lease so Razorpay's
+    // retry can claim the event immediately instead of receiving a false 200
+    // while the event is stuck until the two-minute lease expires.
+    try {
+      switch (eventType) {
+        case 'payment.captured':
+          return await this.handlePaymentCaptured(eventId, paymentEntity, payload);
 
-      case 'payment.failed':
-        return await this.handlePaymentFailed(eventId, paymentEntity, payload);
+        case 'payment.failed':
+          return await this.handlePaymentFailed(eventId, paymentEntity, payload);
 
-      case 'payment.authorized':
-        return await this.handlePaymentAuthorized(eventId, paymentEntity, payload);
+        case 'payment.authorized':
+          return await this.handlePaymentAuthorized(eventId, paymentEntity, payload);
 
-      default:
-        this.logger.log(`Unhandled webhook event type: ${eventType}`);
-        await this.prisma.paymentWebhookEvent.update({
-          where: { eventId },
-          data: { processed: true, processedAt: new Date(), processingLeaseUntil: null, processingToken: null },
+        default:
+          this.logger.log(`Unhandled webhook event type: ${eventType}`);
+          await this.prisma.paymentWebhookEvent.update({
+            where: { eventId },
+            data: { processed: true, processedAt: new Date(), processingLeaseUntil: null, processingToken: null },
+          });
+          return { success: true, message: `Event ${eventType} received but no action required` };
+      }
+    } catch (error) {
+      try {
+        await this.prisma.paymentWebhookEvent.updateMany({
+          where: { eventId, processingToken, processed: false },
+          data: { processingLeaseUntil: null, processingToken: null },
         });
-        return { success: true, message: `Event ${eventType} received but no action required` };
+      } catch (leaseError) {
+        this.logger.error(
+          `Failed to release webhook processing lease for event ${eventId}`,
+          leaseError instanceof Error ? leaseError.stack : String(leaseError),
+        );
+      }
+      throw error;
     }
   }
 
@@ -633,12 +651,11 @@ export class WebhookService {
     });
 
     if (!payment) {
-      this.logger.warn(`Failed payment webhook for unknown gateway order: ${gatewayOrderId}`);
-      await this.prisma.paymentWebhookEvent.update({
-        where: { eventId },
-        data: { processed: true, processedAt: new Date(), processingLeaseUntil: null, processingToken: null },
+      this.logger.warn(`Failed payment webhook for unknown gateway order: ${gatewayOrderId}; leaving event retryable`);
+      throw new NotFoundException({
+        error: 'PAYMENT_NOT_FOUND',
+        message: `Payment record not found for gateway order ${gatewayOrderId}`,
       });
-      return { success: false, message: 'Payment record not found' };
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -703,18 +720,22 @@ export class WebhookService {
     });
 
     if (payment && payment.status === PaymentStatus.PENDING) {
-      await this.prisma.payment.update({
-        where: { id: payment.id },
+      // Use a conditional transition rather than update-by-ID: a captured or
+      // failed event may have won the race after the read above.
+      const transition = await this.prisma.payment.updateMany({
+        where: { id: payment.id, status: PaymentStatus.PENDING },
         data: { status: PaymentStatus.AUTHORIZED },
       });
 
-      await this.prisma.paymentTransaction.create({
-        data: {
-          paymentId: payment.id,
-          eventType: 'payment.authorized',
-          payload: rawPayload,
-        },
-      });
+      if (transition.count === 1) {
+        await this.prisma.paymentTransaction.create({
+          data: {
+            paymentId: payment.id,
+            eventType: 'payment.authorized',
+            payload: rawPayload,
+          },
+        });
+      }
     }
 
     await this.prisma.paymentWebhookEvent.update({
