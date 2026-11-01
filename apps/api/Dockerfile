@@ -58,6 +58,6 @@ EXPOSE 3001
 
 # Healthcheck targeting NestJS readiness endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3001/api/v1/health || exit 1
+  CMD curl -f http://localhost:3001/api/v1/health/ready || exit 1
 
 CMD ["node", "apps/api/dist/main.js"]
