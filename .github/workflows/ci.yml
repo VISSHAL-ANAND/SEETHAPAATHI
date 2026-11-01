@@ -54,4 +54,4 @@ jobs:
             --build-arg NEXT_PUBLIC_STORE_NAME=SEETHAPAATI \
             --build-arg NEXT_PUBLIC_SITE_URL=https://store.example.test \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_ci_public_key \
-            --build-arg NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
+            --build-arg NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION= .
