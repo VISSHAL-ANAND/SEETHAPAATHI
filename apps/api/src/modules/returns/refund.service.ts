@@ -156,22 +156,69 @@ export class RefundService {
             });
           }
 
-          await tx.order.updateMany({
-            where: {
-              id: orderId,
-              status: {
-                in: [
-                  OrderStatus.PAID,
-                  OrderStatus.PROCESSING,
-                  OrderStatus.PACKED,
-                  OrderStatus.SHIPPED,
-                  OrderStatus.OUT_FOR_DELIVERY,
-                  OrderStatus.DELIVERED,
-                ],
-              },
-            },
-            data: { status: OrderStatus.REFUNDED },
+          const refundTotals = await tx.refund.aggregate({
+            where: { paymentId: record.paymentId, status: RefundStatus.PROCESSED },
+            _sum: { amountCents: true },
           });
+          const fullyRefunded = (refundTotals._sum.amountCents ?? 0) >= payment.amountCents;
+
+          if (fullyRefunded) {
+            await tx.payment.updateMany({
+              where: { id: record.paymentId, status: PaymentStatus.CAPTURED },
+              data: { status: PaymentStatus.REFUNDED },
+            });
+
+            const orderBeforeRefund = await tx.order.findUnique({
+              where: { id: orderId },
+              select: { status: true },
+            });
+            const orderUpdate = await tx.order.updateMany({
+              where: {
+                id: orderId,
+                status: {
+                  in: [
+                    OrderStatus.PAID,
+                    OrderStatus.PROCESSING,
+                    OrderStatus.PACKED,
+                    OrderStatus.SHIPPED,
+                    OrderStatus.IN_TRANSIT,
+                    OrderStatus.OUT_FOR_DELIVERY,
+                    OrderStatus.DELIVERED,
+                    OrderStatus.RETURN_REQUESTED,
+                  ],
+                },
+              },
+              data: { status: OrderStatus.REFUNDED },
+            });
+            if (orderUpdate.count === 1 && orderBeforeRefund) {
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId,
+                  oldStatus: orderBeforeRefund.status,
+                  newStatus: OrderStatus.REFUNDED,
+                  reason: 'FULL_PAYMENT_REFUND_PROCESSED',
+                  changedBy: 'REFUND_WORKFLOW',
+                },
+              });
+            }
+          } else if (record.returnId) {
+            // A partial return/refund does not mean the entire order was refunded.
+            const restoredOrder = await tx.order.updateMany({
+              where: { id: orderId, status: OrderStatus.RETURN_REQUESTED },
+              data: { status: OrderStatus.DELIVERED },
+            });
+            if (restoredOrder.count === 1) {
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId,
+                  oldStatus: OrderStatus.RETURN_REQUESTED,
+                  newStatus: OrderStatus.DELIVERED,
+                  reason: 'PARTIAL_RETURN_REFUND_PROCESSED',
+                  changedBy: 'REFUND_WORKFLOW',
+                },
+              });
+            }
+          }
         }
 
         return tx.refund.findUniqueOrThrow({ where: { id: record.id } });
