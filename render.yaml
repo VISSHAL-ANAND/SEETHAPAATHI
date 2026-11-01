@@ -11,7 +11,7 @@ services:
     numInstances: 1
     buildCommand: npm ci && npm run build:contracts && npm run build:api
     startCommand: npm run start:api
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_ENV
         value: production
