@@ -77,7 +77,9 @@ Initial confirmed CI baseline:
 - `apps/api/src/modules/returns/return.service.ts`: completed returns now remain included in cumulative returned-quantity accounting, preventing a customer from returning the same purchased units again after a previous return completes.
 - `apps/api/src/modules/returns/refund.service.ts`: refund idempotency keys are now bound to the original order, amount, reason, and return ID. Reuse with different request details fails with `REFUND_IDEMPOTENCY_KEY_REUSED` before contacting Razorpay.
 - Added `return.service.spec.ts` and `refund.service.spec.ts` regression tests.
-- These changes are committed directly to `main`; CI status is not yet confirmed. Continue Phase 2 with concurrency and reconciliation coverage before sign-off.
+- These changes are committed directly to `main`.
+- GitHub Actions run #142 passed on commit `7ca5e2c1c5302b879ed4450c5f7ba6958510b4db`, including the API test suite containing both new regression tests. Vercel separately reported a deployment rate limit; this is not a GitHub Actions test/build failure.
+- Phase 2 automated CI verification is complete. Dedicated database concurrency tests and live Razorpay refund/reconciliation tests remain open.
 
 ## Verification status
 
@@ -94,7 +96,7 @@ Observed failures that were subsequently addressed:
 - Checkout tests initially still expected cart deletion at gateway intent creation; those assertions were updated to require cart retention until payment capture.
 - Enabling web typecheck exposed five existing UI accesses to `ApiClientError.status`; the API error class now exposes HTTP status.
 
-Latest CI must be re-checked after the recent environment validation, dynamic sitemap, checkout/cart, auth, and CI-gate changes. In particular verify:
+GitHub Actions run #142 passed on the latest documented `main` commit. It completed clean migrations, API typecheck/lint/tests/build, web typecheck/lint/build, API/web Docker builds and production Compose validation. The independent Vercel deployment check was rate-limited (`retry in 24 hours`). For future commits, re-check CI and verify:
 1. API tests including `env.schema.spec.ts`, `webhook.service.spec.ts`, and `checkout.integration.spec.ts`.
 2. API typecheck/lint/build.
 3. Web typecheck/lint/build.
