@@ -19,7 +19,11 @@
 - [ ] Verify refund reconciliation retries, gateway timeout recovery, partial refunds, full refunds, and multiple captured payment attempts.
 
 ## Product/integration follow-ups
-- [ ] Select and integrate an authoritative India Post PIN-code serviceability source; until then keep the storefront fail-closed.
+- [ ] Obtain CEPt integration approval/current contract and whitelist the production API egress IP.
+- [ ] Confirm merchant origin PIN and package weight/dimensions required for route-level Speed Post tariff/serviceability checks.
+- [ ] Implement the India Post provider adapter only after those prerequisites are verified; keep unknown/error outcomes fail-closed.
+- [x] Add regression tests proving malformed PINs are rejected and valid PIN format alone never implies serviceability.
+- [x] Expose the serviceability `verified` flag at the top-level API response.
 - [ ] Review remaining return/refund and fulfillment transitions for complete automated regression coverage.
 - [ ] Verify product sitemap, canonical URLs, metadata and structured data against actual active products.
 - [ ] Review upload content decoding/size limits and consider malware scanning or image re-encoding.
