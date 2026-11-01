@@ -412,6 +412,34 @@ export class WebhookService {
         },
       });
 
+      // 5a. Remove only the quantities purchased from the original cart.
+      // Items added or increased while payment was pending remain in the cart.
+      if (orderFinalStatus === OrderStatus.PAID && payment.order?.notes) {
+        try {
+          const checkoutNotes = JSON.parse(payment.order.notes);
+          const cartId = checkoutNotes?.cartId;
+          if (typeof cartId === 'string' && cartId.length > 0) {
+            for (const [variantId, purchasedQuantity] of requiredByVariant) {
+              await tx.$executeRaw`
+                UPDATE cart_items
+                SET quantity = GREATEST(0, quantity - ${purchasedQuantity}),
+                    updated_at = NOW()
+                WHERE cart_id = ${cartId}
+                  AND variant_id = ${variantId}
+              `;
+            }
+            await tx.cartItem.deleteMany({
+              where: { cartId, quantity: { lte: 0 } },
+            });
+          }
+        } catch (error) {
+          // Cart cleanup must not roll back an authoritative captured payment.
+          this.logger.warn(
+            `Could not reconcile cart for paid order ${payment.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+
       // 6. Record Coupon Usage (HIGH-04) if coupon was applied and order was paid
       if (orderFinalStatus === OrderStatus.PAID && payment.order?.notes) {
         try {
