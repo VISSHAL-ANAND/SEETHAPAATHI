@@ -16,6 +16,12 @@ The initial audit found Prisma migration drift, failing CI tests, unauthenticate
 
 Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They include migrations, order/cancellation policy, webhook inventory reconciliation and refund queueing, cart retention until payment capture, return/refund synchronization, fulfillment guards/history, authenticated image uploads, HttpOnly cookie-only browser auth, safer mutation retries, Redis hardening, production config validation, dynamic sitemap, CI web checks, and documentation updates.
 
+## Phase 2 checkpoint — returns and refunds
+- Reviewed the return and refund services on `main`.
+- Fixed completed-return quantities being excluded from cumulative return accounting; previously completed units could be requested again.
+- Fixed refund idempotency-key reuse: an existing key must match order, amount, reason, and return ID before any Razorpay operation; mismatches now return a conflict.
+- Added focused regression tests for both cases. CI/test execution is pending; do not treat these changes as verified until the current commit's checks complete.
+
 ## Verification
 - Clean-database Prisma migration deployment and API checks passed on intermediate commits. The merchandising repair is now a new forward-only migration; the historical empty migration is preserved.
 - A mixed active/expired reservation regression test passed on an intermediate commit.
