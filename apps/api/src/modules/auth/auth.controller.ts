@@ -43,9 +43,10 @@ export class AuthController {
     await this.enforceRateLimit(req, 'register');
     const result = await this.authService.register(dto);
     this.setAuthCookie(res, result.accessToken, result.expiresIn);
+    const { accessToken: _accessToken, ...session } = result;
     return {
       success: true,
-      data: result,
+      data: session,
     };
   }
 
@@ -60,9 +61,10 @@ export class AuthController {
     await this.enforceRateLimit(req, 'login');
     const result = await this.authService.login(dto);
     this.setAuthCookie(res, result.accessToken, result.expiresIn);
+    const { accessToken: _accessToken, ...session } = result;
     return {
       success: true,
-      data: result,
+      data: session,
     };
   }
 
