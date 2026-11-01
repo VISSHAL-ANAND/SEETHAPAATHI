@@ -166,7 +166,7 @@ export const EnvSchema = z
         });
       }
 
-      if (data.CORS_ORIGIN.split(',').some((origin) => /localhost|127\\.0\\.0\\.1/i.test(origin.trim()))) {
+      if (data.CORS_ORIGIN.split(',').some((origin) => /localhost|127\.0\.0\.1/i.test(origin.trim()))) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['CORS_ORIGIN'],
