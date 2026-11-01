@@ -470,12 +470,13 @@ describe('Phase 3 End-to-End Checkout & Payment Integration Test (PostgreSQL)', 
     const invAfterRetry = await prisma.inventory.findUnique({ where: { variantId: retryVariant.id } });
     expect(invAfterRetry!.quantityReserved).toBe(1);
 
-    // Verify cart was now cleared upon successful gateway order confirmation
-    const cartAfterSuccess = await prisma.cart.findUnique({
+    // The gateway order is only an intent; retain cart contents until the
+    // authoritative payment-captured webhook removes purchased quantities.
+    const cartAfterGatewayIntent = await prisma.cart.findUnique({
       where: { id: retryCartId },
       include: { items: true },
     });
-    expect(cartAfterSuccess!.items).toHaveLength(0);
+    expect(cartAfterGatewayIntent!.items).toHaveLength(1);
   });
 
   it('MED-NEW-01: enforces strict coupon usage limits under concurrent checkouts via row lock', async () => {
