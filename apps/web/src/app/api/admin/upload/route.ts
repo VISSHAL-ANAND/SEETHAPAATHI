@@ -37,10 +37,21 @@ export async function POST(req: NextRequest) {
   try {
     // Reject cross-origin form submissions before using the ambient session cookie.
     const requestOrigin = req.headers.get('origin');
-    const expectedOrigin = new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-    ).origin;
-    if (!requestOrigin || requestOrigin !== expectedOrigin) {
+    const configuredOrigins =
+      process.env.UPLOAD_ALLOWED_ORIGINS ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'http://localhost:3000';
+    const allowedOrigins = configuredOrigins
+      .split(',')
+      .map((origin) => {
+        try {
+          return new URL(origin.trim()).origin;
+        } catch {
+          return null;
+        }
+      })
+      .filter((origin): origin is string => Boolean(origin));
+    if (!requestOrigin || !allowedOrigins.includes(requestOrigin)) {
       return NextResponse.json({ success: false, error: 'Invalid request origin' }, { status: 403 });
     }
 
