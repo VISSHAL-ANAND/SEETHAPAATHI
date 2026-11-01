@@ -170,6 +170,48 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
     });
   });
 
+    it('releases its processing lease when settlement fails so a gateway retry can reclaim the event', async () => {
+      razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValueOnce(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({});
+      prisma.payment.findUnique.mockResolvedValue(null);
+
+      const payload = {
+        event: 'payment.captured',
+        id: 'evt_retry_after_failure',
+        payload: {
+          payment: {
+            entity: {
+              id: 'pay_retry_after_failure',
+              order_id: 'order_not_yet_visible',
+              amount: 25000,
+              currency: 'INR',
+            },
+          },
+        },
+      };
+
+      await expect(
+        service.processRazorpayWebhook(
+          JSON.stringify(payload),
+          'valid_sig',
+          'evt_retry_after_failure',
+        ),
+      ).rejects.toThrow();
+
+      expect(prisma.paymentWebhookEvent.updateMany).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          where: {
+            eventId: 'evt_retry_after_failure',
+            processingToken: expect.any(String),
+            processed: false,
+          },
+          data: { processingLeaseUntil: null, processingToken: null },
+        }),
+      );
+    });
+
   describe('payment.captured Handler', () => {
     const validPayload = {
       event: 'payment.captured',
@@ -579,6 +621,46 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       await expect(
         service.processRazorpayWebhook(JSON.stringify(validPayload), 'valid_sig', 'evt_cap_1'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('payment.authorized Handler', () => {
+    it('does not overwrite a payment state changed by a concurrent capture or failure webhook', async () => {
+      razorpayAdapter.verifyWebhookSignature.mockReturnValue(true);
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({});
+      prisma.payment.findUnique.mockResolvedValue({
+        id: 'pay_authorization_race',
+        status: PaymentStatus.PENDING,
+      });
+      prisma.payment.updateMany.mockResolvedValue({ count: 0 });
+
+      const payload = {
+        event: 'payment.authorized',
+        id: 'evt_authorization_race',
+        payload: {
+          payment: {
+            entity: {
+              id: 'pay_rzp_authorization_race',
+              order_id: 'order_rzp_authorization_race',
+            },
+          },
+        },
+      };
+
+      const result = await service.processRazorpayWebhook(
+        JSON.stringify(payload),
+        'valid_sig',
+        'evt_authorization_race',
+      );
+
+      expect(result.success).toBe(true);
+      expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+        where: { id: 'pay_authorization_race', status: PaymentStatus.PENDING },
+        data: { status: PaymentStatus.AUTHORIZED },
+      });
+      expect(prisma.payment.update).not.toHaveBeenCalled();
+      expect(prisma.paymentTransaction.create).not.toHaveBeenCalled();
     });
   });
 
