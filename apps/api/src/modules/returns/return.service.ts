@@ -21,7 +21,20 @@ export class ReturnService {
    for(const i of items){if(i.quantity<=0)throw new BadRequestException({error:'INVALID_RETURN_QUANTITY'});const [row]=await tx.$queryRaw<Array<{purchased:number;returned:number}>>`SELECT oi.quantity AS purchased, COALESCE((SELECT SUM(ri.quantity) FROM return_items ri JOIN returns r ON r.id=ri.return_id WHERE ri.order_item_id=oi.id AND r.status NOT IN ('REJECTED','CANCELLED','COMPLETED')),0)::int AS returned FROM order_items oi WHERE oi.id=${i.orderItemId} FOR UPDATE`;if(!row||i.quantity>row.purchased-row.returned)throw new BadRequestException({error:'RETURN_QUANTITY_EXCEEDED'});}
    const [seq]=await tx.$queryRaw<Array<{value:bigint}>>`SELECT nextval('return_number_seq') value`;
    const created = await tx.return.create({data:{returnNumber:`RET-${String(Number(seq.value)).padStart(6,'0')}`,orderId,userId,reason,notes,evidenceUrl,items:{create:items.map(i=>({orderItemId:i.orderItemId,quantity:i.quantity}))}} ,include:{items:true}});
-   await tx.order.updateMany({where:{id:orderId,status:OrderStatus.DELIVERED},data:{status:OrderStatus.RETURN_REQUESTED}});
+   const orderTransition = await tx.order.updateMany({
+    where:{id:orderId,status:OrderStatus.DELIVERED},
+    data:{status:OrderStatus.RETURN_REQUESTED}
+   });
+   if(orderTransition.count!==1) throw new BadRequestException({error:'RETURN_ORDER_STATE_CHANGED'});
+   await tx.orderStatusHistory.create({
+    data:{
+     orderId,
+     oldStatus:OrderStatus.DELIVERED,
+     newStatus:OrderStatus.RETURN_REQUESTED,
+     reason:'CUSTOMER_RETURN_REQUESTED',
+     changedBy:userId
+    }
+   });
    await this.notifications.enqueueReturnStatus(created.id, orderId, ReturnStatus.REQUESTED, tx);
    return created;
   });
@@ -40,6 +53,9 @@ export class ReturnService {
    const r=locked[0];
    if(!r) throw new NotFoundException({error:'RETURN_NOT_FOUND'});
    if(!transitions[r.status].includes(status)) throw new BadRequestException({error:'INVALID_RETURN_TRANSITION'});
+   if(status===ReturnStatus.COMPLETED) {
+    throw new BadRequestException({error:'REFUND_COMPLETION_MANAGED_BY_REFUND_SERVICE'});
+   }
 
    const items=await tx.returnItem.findMany({where:{returnId:id},select:{id:true,orderItemId:true,quantity:true,condition:true}});
    if(status===ReturnStatus.INSPECTED){
@@ -73,7 +89,25 @@ export class ReturnService {
     data:{status,staffNotes:staffNotes??r.staff_notes??undefined,resolvedAt:['COMPLETED','REJECTED','CANCELLED'].includes(status)?new Date():undefined},
     include:{items:true}
    });
-   await this.notifications.enqueueReturnStatus(id, (await tx.return.findUniqueOrThrow({where:{id},select:{orderId:true}})).orderId, status, tx);
+   const returnRecord = await tx.return.findUniqueOrThrow({where:{id},select:{orderId:true}});
+   if(status===ReturnStatus.REJECTED || status===ReturnStatus.CANCELLED) {
+    const restoredOrder = await tx.order.updateMany({
+     where:{id:returnRecord.orderId,status:OrderStatus.RETURN_REQUESTED},
+     data:{status:OrderStatus.DELIVERED}
+    });
+    if(restoredOrder.count===1) {
+     await tx.orderStatusHistory.create({
+      data:{
+       orderId:returnRecord.orderId,
+       oldStatus:OrderStatus.RETURN_REQUESTED,
+       newStatus:OrderStatus.DELIVERED,
+       reason:status===ReturnStatus.REJECTED?'RETURN_REJECTED':'RETURN_CANCELLED',
+       changedBy:'RETURN_WORKFLOW'
+      }
+     });
+    }
+   }
+   await this.notifications.enqueueReturnStatus(id, returnRecord.orderId, status, tx);
    return updated;
   });
  }
