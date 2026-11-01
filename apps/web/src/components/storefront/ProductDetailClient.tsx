@@ -41,6 +41,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
   const [pincodeResult, setPincodeResult] = useState<{
     checked: boolean;
     serviceable?: boolean;
+    verified?: boolean;
     carrier?: string;
     estimatedDays?: string;
     message?: string;
@@ -61,31 +62,34 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
     try {
       const res = await fetchApi<{
         serviceable: boolean;
+        verified: boolean;
         carrier: string;
         estimatedDays: string;
         message?: string;
       }>('/shipping/serviceability?pincode=' + cleanPin);
 
-      if (res && res.serviceable) {
+      if (res?.verified === true && res.serviceable === true) {
         setPincodeResult({
           checked: true,
           serviceable: true,
+          verified: true,
           carrier: res.carrier || 'India Post Speed Post',
-          estimatedDays: res.estimatedDays || '3-5 Business Days',
+          estimatedDays: res.estimatedDays || 'Unspecified',
         });
       } else {
         setPincodeResult({
           checked: true,
           serviceable: false,
-          message: res?.message || 'Delivery serviceability could not be verified for this postal code.',
+          verified: res?.verified === true,
+          message: res?.message || 'Delivery serviceability could not be verified. Please contact support before ordering.',
         });
       }
     } catch {
       setPincodeResult({
         checked: true,
-        serviceable: true,
-        carrier: 'India Post Speed Post',
-        estimatedDays: '3-5 Business Days',
+        serviceable: false,
+        verified: false,
+        message: 'Delivery serviceability could not be verified. Please contact support before ordering.',
       });
     } finally {
       setPincodeLoading(false);
@@ -412,7 +416,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
                       </div>
                     </div>
                   ) : (
-                    <p className="text-red-700 text-[11px]">{pincodeResult.message}</p>
+                    <p className={`text-[11px] ${pincodeResult.verified ? 'text-red-700' : 'text-amber-700'}`}>{pincodeResult.message}</p>
                   )}
                 </div>
               )}
