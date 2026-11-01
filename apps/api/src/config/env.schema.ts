@@ -126,6 +126,8 @@ export const EnvSchema = z
       if (
         !data.RAZORPAY_KEY_ID.startsWith('rzp_live_') ||
         credentialPlaceholders.test(data.RAZORPAY_KEY_ID) ||
+        data.RAZORPAY_KEY_SECRET.length < 16 ||
+        data.RAZORPAY_WEBHOOK_SECRET.length < 16 ||
         credentialPlaceholders.test(data.RAZORPAY_KEY_SECRET) ||
         credentialPlaceholders.test(data.RAZORPAY_WEBHOOK_SECRET)
       ) {
@@ -153,6 +155,7 @@ export const EnvSchema = z
       }
 
       if (
+        !/^postgres(?:ql)?:\/\//i.test(data.DATABASE_URL) ||
         data.DATABASE_URL === 'postgresql://postgres:postgres@localhost:5432/seethapaati_dev?schema=public' ||
         credentialPlaceholders.test(data.DATABASE_URL)
       ) {
@@ -163,11 +166,19 @@ export const EnvSchema = z
         });
       }
 
-      if (data.CORS_ORIGIN.split(',').some((origin) => /localhost|127\.0\.0\.1/i.test(origin.trim()))) {
+      const productionOrigins = data.CORS_ORIGIN.split(',').map((origin) => origin.trim());
+      if (productionOrigins.some((origin) => /localhost|127\.0\.0\.1/i.test(origin))) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['CORS_ORIGIN'],
           message: 'Localhost origins are not allowed in production CORS configuration.',
+        });
+      }
+      if (productionOrigins.some((origin) => !origin.startsWith('https://'))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CORS_ORIGIN'],
+          message: 'Production CORS origins must use HTTPS.',
         });
       }
 
