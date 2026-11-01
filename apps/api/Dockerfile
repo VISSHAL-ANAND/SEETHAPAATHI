@@ -16,6 +16,7 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
 
 # Install the exact workspace dependency graph
 RUN npm ci
