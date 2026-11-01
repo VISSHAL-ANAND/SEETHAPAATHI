@@ -142,7 +142,6 @@ export class ShippingService {
         data: {
           shipmentId: shipment.id,
           status: ShipmentStatus.SHIPPED,
-          location: 'Chennai Central Parcel Hub',
           description: `Consignment booked with India Post Speed Post. Tracking No: ${trimmedTracking}`,
         },
       });
@@ -188,6 +187,15 @@ export class ShippingService {
     trackingUrl?: string,
     adminId = 'ADMIN',
   ) {
+    if (!/^india post(?: speed post)?$/i.test((courierName || '').trim())) {
+      throw new BadRequestException({
+        error: 'UNSUPPORTED_COURIER',
+        message: 'This deployment currently supports India Post tracking only.',
+      });
+    }
+    // India Post tracking URLs are generated from the consignment number;
+    // do not accept an arbitrary caller-supplied URL.
+    void trackingUrl;
     return this.fulfillOrder(orderId, trackingNumber, adminId);
   }
 
