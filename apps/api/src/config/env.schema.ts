@@ -97,7 +97,8 @@ export const EnvSchema = z
     if (data.NODE_ENV === 'production') {
       if (
         data.JWT_SECRET === 'development_jwt_secret_must_be_changed_in_prod' ||
-        data.JWT_SECRET.length < 32
+        data.JWT_SECRET.length < 32 ||
+        /replace_with|placeholder|x{8,}/i.test(data.JWT_SECRET)
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -110,14 +111,66 @@ export const EnvSchema = z
       // Production seller identity/address configuration must be explicitly supplied.
       const sellerPlaceholdersUsed =
         data.SELLER_LEGAL_NAME === SELLER_CONFIG_PLACEHOLDERS.legalName ||
+        data.SELLER_TRADE_NAME === SELLER_CONFIG_PLACEHOLDERS.tradeName ||
         data.SELLER_ADDRESS_LINE1 === SELLER_CONFIG_PLACEHOLDERS.addressLine1 ||
         data.SELLER_CITY === SELLER_CONFIG_PLACEHOLDERS.city ||
+        data.SELLER_STATE === SELLER_CONFIG_PLACEHOLDERS.state ||
+        data.SELLER_STATE_CODE === SELLER_CONFIG_PLACEHOLDERS.stateCode ||
         data.SELLER_PINCODE === SELLER_CONFIG_PLACEHOLDERS.pincode;
       if (sellerPlaceholdersUsed) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['SELLER_LEGAL_NAME'],
           message: 'Production seller legal/trade name, address, state code and pincode must be explicitly configured; development placeholders are not allowed.',
+        });
+      }
+
+      const credentialPlaceholders = /placeholder|replace_with|your_|x{8,}/i;
+      if (
+        !data.RAZORPAY_KEY_ID.startsWith('rzp_live_') ||
+        credentialPlaceholders.test(data.RAZORPAY_KEY_ID) ||
+        credentialPlaceholders.test(data.RAZORPAY_KEY_SECRET) ||
+        credentialPlaceholders.test(data.RAZORPAY_WEBHOOK_SECRET)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['RAZORPAY_KEY_ID'],
+          message: 'Production Razorpay live credentials must be explicitly configured; placeholders and test keys are not allowed.',
+        });
+      }
+
+      if (!data.RESEND_API_KEY || credentialPlaceholders.test(data.RESEND_API_KEY)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['RESEND_API_KEY'],
+          message: 'A real production Resend API key is required; placeholders are not allowed.',
+        });
+      }
+
+      if (data.EMAIL_FROM === 'onboarding@resend.dev') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['EMAIL_FROM'],
+          message: 'Configure a verified production sender address.',
+        });
+      }
+
+      if (
+        data.DATABASE_URL === 'postgresql://postgres:postgres@localhost:5432/seethapaati_dev?schema=public' ||
+        credentialPlaceholders.test(data.DATABASE_URL)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['DATABASE_URL'],
+          message: 'Configure a real production PostgreSQL connection string; placeholders are not allowed.',
+        });
+      }
+
+      if (data.CORS_ORIGIN.split(',').some((origin) => /localhost|127\\.0\\.0\\.1/i.test(origin.trim()))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['CORS_ORIGIN'],
+          message: 'Localhost origins are not allowed in production CORS configuration.',
         });
       }
 
