@@ -1,27 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { Hairline } from '../components/ui/Hairline';
 import { SiteHeader } from '../components/storefront/SiteHeader';
 import { CartProvider } from '../context/CartContext';
 import { CartDrawer } from '../components/storefront/CartDrawer';
 import { MobileBottomNav } from '../components/storefront/MobileBottomNav';
-
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-serif',
-  display: 'swap',
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
-  display: 'swap',
-});
 
 const STORE_NAME = process.env.NEXT_PUBLIC_STORE_NAME || 'SEETHAPAATI';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seethapaati.com';
@@ -81,7 +65,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${plusJakarta.variable}`}>
+    <html lang="en">
       <body className="min-h-screen flex flex-col bg-[#F7F5F0] text-[#181513] selection:bg-[#181513] selection:text-[#F7F5F0]">
         <CartProvider>
           <SiteHeader />
