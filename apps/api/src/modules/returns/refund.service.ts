@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, RefundReason, RefundStatus, ReturnStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -95,6 +95,17 @@ export class RefundService {
     }
 
     if (!record) throw new BadRequestException({ error: 'REFUND_INITIALIZATION_FAILED' });
+
+    // An idempotency key identifies one immutable refund request. Never reuse
+    // an existing record for a different order, amount, reason, or return.
+    if (
+      record.orderId !== orderId ||
+      record.amountCents !== amountCents ||
+      record.reason !== reason ||
+      record.returnId !== (returnId ?? null)
+    ) {
+      throw new ConflictException({ error: 'REFUND_IDEMPOTENCY_KEY_REUSED' });
+    }
     if (record.status === RefundStatus.PROCESSED) return record;
 
     const token = randomUUID();
