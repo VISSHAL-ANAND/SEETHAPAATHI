@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RazorpayAdapter } from './razorpay.adapter';
 import { InventoryService } from '../inventory/inventory.service';
 import { PaymentsService } from './payments.service';
-import { OrderStatus, PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus, RefundReason, RefundStatus } from '@prisma/client';
 import { OutboxService } from '../invoicing/outbox.service';
 import { randomUUID } from 'crypto';
 import { NotificationService } from '../notifications/notification.service';
@@ -250,70 +250,127 @@ export class WebhookService {
         },
       });
 
-      // 2. Commit stock reservations inside the transaction (CRIT-01)
-      const committedCount = await this.inventoryService.commitReservationsBySession(payment.orderId, tx);
+      // 2. Reconcile every order line against its committed and active reservations.
+      // This is deliberately item/quantity based: a non-zero reservation count does
+      // not prove that every line in a multi-item order is covered.
+      const orderItems = payment.order?.items ?? [];
+      const reservations = await tx.inventoryReservation.findMany({
+        where: { checkoutSessionId: payment.orderId },
+        orderBy: { variantId: 'asc' },
+      });
+
+      const requiredByVariant = new Map<string, number>();
+      let allStockAvailable = orderItems.length > 0;
+      for (const item of orderItems) {
+        if (!item.variantId || item.quantity <= 0) {
+          allStockAvailable = false;
+          continue;
+        }
+        requiredByVariant.set(
+          item.variantId,
+          (requiredByVariant.get(item.variantId) ?? 0) + item.quantity,
+        );
+      }
+
+      const activeByVariant = new Map<string, number>();
+      const committedByVariant = new Map<string, number>();
+      for (const reservation of reservations) {
+        const target = reservation.status === 'ACTIVE'
+          ? activeByVariant
+          : reservation.status === 'COMMITTED'
+            ? committedByVariant
+            : null;
+        if (target) {
+          target.set(
+            reservation.variantId,
+            (target.get(reservation.variantId) ?? 0) + reservation.quantity,
+          );
+        }
+      }
+
+      // A reservation for a line that no longer exists in the immutable order
+      // snapshot indicates corrupted checkout state; do not fulfill it.
+      for (const [variantId, quantity] of [...activeByVariant, ...committedByVariant]) {
+        if (!requiredByVariant.has(variantId) || quantity <= 0) {
+          allStockAvailable = false;
+        }
+      }
+
+      const missingAllocations: Array<{ variantId: string; quantity: number }> = [];
+      const sortedVariantIds = [...requiredByVariant.keys()].sort((a, b) => a.localeCompare(b));
+
+      // Lock all inventory rows in one deterministic order before committing any
+      // reservation or allocating an expired/missing quantity.
+      const inventoryByVariant = new Map<
+        string,
+        { quantity_available: number; quantity_reserved: number }
+      >();
+      for (const variantId of sortedVariantIds) {
+        const [row] = await tx.$queryRaw<Array<{
+          quantity_available: number;
+          quantity_reserved: number;
+        }>>`
+          SELECT quantity_available, quantity_reserved
+          FROM inventory
+          WHERE variant_id = ${variantId}
+          FOR UPDATE
+        `;
+        if (row) inventoryByVariant.set(variantId, row);
+        else allStockAvailable = false;
+      }
+
+      for (const variantId of sortedVariantIds) {
+        const required = requiredByVariant.get(variantId) ?? 0;
+        const active = activeByVariant.get(variantId) ?? 0;
+        const committed = committedByVariant.get(variantId) ?? 0;
+        const missing = required - active - committed;
+        const inventory = inventoryByVariant.get(variantId);
+
+        if (missing < 0 || !inventory || (inventory.quantity_available - inventory.quantity_reserved) < missing) {
+          allStockAvailable = false;
+          continue;
+        }
+        if (missing > 0) missingAllocations.push({ variantId, quantity: missing });
+      }
 
       let orderFinalStatus: OrderStatus = OrderStatus.PAID;
       let orderStatusReason = 'PAYMENT_CAPTURED_WEBHOOK';
 
-      // 3. Handle Late Payment Webhook where inventory reservation expired (HIGH-03)
-      if (committedCount === 0 && payment.order && payment.order.items.length > 0) {
-        this.logger.warn(
-          `Reservations expired for order ${payment.orderId}. Verifying available inventory under row lock...`,
-        );
+      if (allStockAvailable) {
+        await this.inventoryService.commitReservationsBySession(payment.orderId, tx);
 
-        // Sort items deterministically by variantId to prevent deadlocks
-        const orderItems = [...payment.order.items]
-          .filter((item) => !!item.variantId)
-          .sort((a, b) => a.variantId!.localeCompare(b.variantId!));
-
-        let allStockAvailable = true;
-
-        for (const item of orderItems) {
-          const [row] = await tx.$queryRaw<Array<{ quantity_available: number; quantity_reserved: number }>>`
-            SELECT quantity_available, quantity_reserved
-            FROM inventory
-            WHERE variant_id = ${item.variantId}
-            FOR UPDATE
+        for (const allocation of missingAllocations) {
+          await tx.$executeRaw`
+            UPDATE inventory
+            SET quantity_available = quantity_available - ${allocation.quantity},
+                version = version + 1,
+                updated_at = NOW()
+            WHERE variant_id = ${allocation.variantId}
           `;
-
-          if (!row || (row.quantity_available - row.quantity_reserved) < item.quantity) {
-            allStockAvailable = false;
-            break;
-          }
+          await tx.inventoryMovement.create({
+            data: {
+              variantId: allocation.variantId,
+              delta: -allocation.quantity,
+              reason: 'SALE_COMMITTED_POST_EXPIRY',
+              referenceId: payment.orderId,
+            },
+          });
         }
 
-        if (allStockAvailable) {
-          // Allocate and deduct stock directly
-          for (const item of orderItems) {
-            await tx.$executeRaw`
-              UPDATE inventory
-              SET quantity_available = quantity_available - ${item.quantity},
-                  version = version + 1,
-                  updated_at = NOW()
-              WHERE variant_id = ${item.variantId}
-            `;
-
-            await tx.inventoryMovement.create({
-              data: {
-                variantId: item.variantId!,
-                delta: -item.quantity,
-                reason: 'SALE_COMMITTED_POST_EXPIRY',
-                referenceId: payment.orderId,
-              },
-            });
-          }
-          orderFinalStatus = OrderStatus.PAID;
-          orderStatusReason = 'PAYMENT_CAPTURED_POST_EXPIRY_STOCK_ALLOCATED';
-          this.logger.log(`Post-expiry inventory successfully allocated for order ${payment.orderId}`);
-        } else {
-          // Stock unavailable - order must be cancelled for refund
-          orderFinalStatus = OrderStatus.CANCELLED;
-          orderStatusReason = 'PAYMENT_CAPTURED_OUT_OF_STOCK_REQUIRES_REFUND';
-          this.logger.error(
-            `Payment captured for order ${payment.orderId} but inventory is out of stock after expiry! Order cancelled, requires refund.`,
-          );
+        if (missingAllocations.length > 0) {
+          orderStatusReason = activeByVariant.size > 0
+            ? 'PAYMENT_CAPTURED_MIXED_RESERVATION_STOCK_ALLOCATED'
+            : 'PAYMENT_CAPTURED_POST_EXPIRY_STOCK_ALLOCATED';
         }
+      } else {
+        // Do not commit a subset of the order. Release all still-active holds and
+        // queue a full refund because Razorpay has already captured the payment.
+        await this.inventoryService.cancelReservationsBySession(payment.orderId, tx);
+        orderFinalStatus = OrderStatus.CANCELLED;
+        orderStatusReason = 'PAYMENT_CAPTURED_OUT_OF_STOCK_REQUIRES_REFUND';
+        this.logger.error(
+          `Payment captured for order ${payment.orderId} but all line quantities could not be allocated. Order cancelled and refund queued.`,
+        );
       }
 
       // 4. Update Order status
@@ -327,6 +384,23 @@ export class WebhookService {
           data: { orderId: payment.orderId, oldStatus: OrderStatus.PENDING_PAYMENT, newStatus: orderFinalStatus, reason: orderStatusReason, changedBy: 'RAZORPAY_WEBHOOK' },
         });
         await this.notificationService.enqueueOrderStatus(payment.orderId, orderFinalStatus, tx);
+      }
+
+      // 4a. A captured payment with no complete stock allocation must enter
+      // the existing refund reconciliation workflow; never leave it as a manual note.
+      if (orderFinalStatus === OrderStatus.CANCELLED) {
+        await tx.refund.create({
+          data: {
+            orderId: payment.orderId,
+            paymentId: payment.id,
+            amountCents: payment.amountCents,
+            currency: payment.currency,
+            status: RefundStatus.PENDING,
+            reason: RefundReason.REFUND_REQUIRED_OTHER,
+            idempotencyKey: `auto-refund-out-of-stock:${payment.id}`,
+            notes: 'Automatic refund required because the complete order quantity could not be allocated after payment capture.',
+          },
+        });
       }
 
       // 5. Record transaction ledger entry
