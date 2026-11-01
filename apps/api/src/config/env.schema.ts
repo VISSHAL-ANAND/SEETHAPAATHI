@@ -138,7 +138,11 @@ export const EnvSchema = z
         });
       }
 
-      if (!data.RESEND_API_KEY || credentialPlaceholders.test(data.RESEND_API_KEY)) {
+      if (
+        !data.RESEND_API_KEY ||
+        /^re_test_/i.test(data.RESEND_API_KEY) ||
+        credentialPlaceholders.test(data.RESEND_API_KEY)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['RESEND_API_KEY'],
