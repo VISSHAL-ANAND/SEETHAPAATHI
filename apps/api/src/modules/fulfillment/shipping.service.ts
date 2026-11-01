@@ -40,6 +40,7 @@ export interface IndiaPostServiceabilityResult {
   carrier: string;
   estimatedDays: string;
   pincode?: string;
+  message?: string;
 }
 
 @Injectable()
@@ -171,9 +172,10 @@ export class ShippingService {
   }
 
   /**
-   * 2. Pincode Serviceability Check
-   * Validates that the input is a valid 6-digit Indian PIN code (/^[1-9][0-9]{5}$/).
-   * India Post Speed Post covers 100% of postal circles across India.
+   * 2. Pincode Serviceability Check.
+   * PIN format validation is not proof that a specific destination is serviceable.
+   * Until a live India Post serviceability source is configured, fail closed rather
+   * than promise delivery or an estimated transit time.
    */
   async checkServiceability(pincode: string): Promise<IndiaPostServiceabilityResult> {
     const trimmedPincode = (pincode || '').trim();
@@ -186,10 +188,11 @@ export class ShippingService {
     }
 
     return {
-      serviceable: true,
+      serviceable: false,
       carrier: 'India Post Speed Post',
-      estimatedDays: '3-5 Business Days',
+      estimatedDays: 'Unverified',
       pincode: trimmedPincode,
+      message: 'Delivery serviceability is not currently verified for this PIN code.',
     };
   }
 
