@@ -479,6 +479,102 @@ describe('Phase 3 End-to-End Checkout & Payment Integration Test (PostgreSQL)', 
     expect(cartAfterGatewayIntent!.items).toHaveLength(1);
   });
 
+  it('PHASE-1: prevents two concurrent checkouts from reserving the final unit', async () => {
+    const scarceVariant = await prisma.productVariant.create({
+      data: {
+        productId,
+        hsnCode: '0910',
+        sku: `LAST-UNIT-${testSuffix}`,
+        priceCents: 15000,
+        weightGrams: 100,
+        packType: 'Pouch',
+        status: 'ACTIVE',
+        inventory: {
+          create: {
+            quantityAvailable: 1,
+            quantityReserved: 0,
+            reorderThreshold: 0,
+          },
+        },
+      },
+    });
+    variantIds.push(scarceVariant.id);
+
+    const customers = await Promise.all(
+      ['last_unit_a', 'last_unit_b'].map((prefix) =>
+        prisma.user.create({
+          data: {
+            email: `${prefix}_${testSuffix}@seethapaati.test`,
+            passwordHash: 'dummy_hash',
+            fullName: prefix,
+          },
+        }),
+      ),
+    );
+    userIds.push(...customers.map((customer) => customer.id));
+
+    const carts = await Promise.all(
+      customers.map(async (customer) => {
+        const id = await cartService.getOrCreateCart(customer.id);
+        cartIds.push(id);
+        await cartService.addItem(id, { variantId: scarceVariant.id, quantity: 1 });
+        return id;
+      }),
+    );
+
+    jest.spyOn(razorpayAdapter, 'createOrder').mockImplementation(async (params) => ({
+      gatewayOrderId: `rzp_last_unit_${crypto.randomUUID()}`,
+      gateway: 'RAZORPAY',
+      amountCents: params.amountCents,
+      currency: params.currency,
+    }));
+
+    const shippingAddress = {
+      fullName: 'Last Unit Customer',
+      phone: '+919876543210',
+      addressLine1: '12 Temple Lane',
+      city: 'Madurai',
+      state: 'Tamil Nadu',
+      stateCode: 'TN',
+      postalCode: '625001',
+      country: 'IN',
+    };
+
+    const results = await Promise.allSettled(
+      customers.map((customer, index) =>
+        checkoutService.createCheckoutIntent(customer.id, {
+          cartId: carts[index],
+          idempotencyKey: `idem_last_unit_${index}_${testSuffix}`,
+          shippingAddress,
+        }),
+      ),
+    );
+
+    const fulfilled = results.filter(
+      (result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled',
+    );
+    const rejected = results.filter(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    orderIds.push(fulfilled[0].value.orderId);
+    expect(rejected[0].reason).toBeInstanceOf(ConflictException);
+
+    const inventory = await prisma.inventory.findUnique({
+      where: { variantId: scarceVariant.id },
+    });
+    expect(inventory!.quantityAvailable).toBe(1);
+    expect(inventory!.quantityReserved).toBe(1);
+
+    const reservations = await prisma.inventoryReservation.findMany({
+      where: { variantId: scarceVariant.id, status: 'ACTIVE' },
+    });
+    expect(reservations).toHaveLength(1);
+    expect(reservations[0].quantity).toBe(1);
+  });
+
   it('MED-NEW-01: enforces strict coupon usage limits under concurrent checkouts via row lock', async () => {
     // 1. Create a coupon with usageLimit = 1
     const couponCode = `LIMIT1_${testSuffix}`;
