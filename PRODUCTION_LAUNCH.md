@@ -24,7 +24,8 @@ Use `.env.example` as a variable checklist, not as a source of production creden
 | `NEXT_PUBLIC_SITE_URL` | Canonical storefront origin |
 | `NEXT_PUBLIC_STORE_NAME` | Store display name |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Public Razorpay key ID |
-| `UPLOAD_DIR` | Persistent upload directory; Docker Compose uses the mounted web uploads volume |
+| `UPLOAD_DIR` | Persistent upload directory; Docker Compose and Render configure their persistent storage paths |
+| `UPLOAD_ALLOWED_ORIGINS` | Comma-separated exact storefront origins allowed to submit admin uploads |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Search Console token |
 
 ### API
