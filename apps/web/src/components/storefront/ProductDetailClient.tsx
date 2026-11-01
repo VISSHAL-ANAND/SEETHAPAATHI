@@ -76,7 +76,7 @@ export function ProductDetailClient({ initialProduct }: ProductDetailClientProps
         setPincodeResult({
           checked: true,
           serviceable: false,
-          message: 'Delivery currently unavailable for this postal code.',
+          message: res?.message || 'Delivery serviceability could not be verified for this postal code.',
         });
       }
     } catch {
