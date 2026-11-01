@@ -55,3 +55,27 @@ jobs:
             --build-arg NEXT_PUBLIC_SITE_URL=https://store.example.test \
             --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_ci_public_key \
             --build-arg NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION= .
+      - name: Validate production Compose configuration
+        env:
+          POSTGRES_PASSWORD: ci_postgres_password_123456
+          DATABASE_URL: postgresql://postgres:ci_postgres_password_123456@postgres:5432/seethapaati_prod?schema=public
+          REDIS_PASSWORD: ci_redis_password_123456
+          JWT_SECRET: ci_jwt_secret_with_more_than_32_characters_123456
+          CORS_ORIGIN: https://store.example.test
+          RAZORPAY_KEY_ID: rzp_live_ci_key_123456
+          RAZORPAY_KEY_SECRET: ci_razorpay_secret_123456789
+          RAZORPAY_WEBHOOK_SECRET: ci_razorpay_webhook_secret_123456789
+          RESEND_API_KEY: re_ci_test_key_123456
+          EMAIL_FROM: orders@example.test
+          SELLER_LEGAL_NAME: Example Seller Private Limited
+          SELLER_TRADE_NAME: Example Seller
+          SELLER_GSTIN: 33ABCDE1234F1Z5
+          SELLER_ADDRESS_LINE1: 1 Test Street
+          SELLER_CITY: Coimbatore
+          SELLER_STATE: Tamil Nadu
+          SELLER_STATE_CODE: "33"
+          SELLER_PINCODE: "641001"
+          NEXT_PUBLIC_API_URL: https://api.example.test/api/v1
+          NEXT_PUBLIC_SITE_URL: https://store.example.test
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: rzp_live_ci_public_key
+        run: docker compose -f docker-compose.prod.yml config --quiet
