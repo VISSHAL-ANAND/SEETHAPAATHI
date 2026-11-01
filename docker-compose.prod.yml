@@ -102,6 +102,8 @@ services:
       NODE_ENV: production
       PORT: 3000
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      INTERNAL_API_URL: http://api:3001/api/v1
+      UPLOAD_DIR: /app/apps/web/public/uploads
       NEXT_PUBLIC_STORE_NAME: SEETHAPAATI
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://seethapaati.com}
       NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:-rzp_live_placeholder}
@@ -109,7 +111,12 @@ services:
       - "3000:3000"
     depends_on:
       - api
+    volumes:
+      # Persistent uploads for single-host Docker deployments. Multi-host
+      # deployments should use shared object storage instead.
+      - webuploads:/app/apps/web/public/uploads
 
 volumes:
   pgdata:
   redisdata:
+  webuploads:
