@@ -24,6 +24,13 @@ export async function fetchWithRetry(
   timeoutMs = 8000
 ): Promise<Response> {
   let lastError: Error | null = null;
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = new Headers(options.headers);
+  const hasIdempotencyKey = Boolean(
+    headers.get('Idempotency-Key') || headers.get('X-Idempotency-Key')
+  );
+  const retrySafe = ['GET', 'HEAD', 'OPTIONS'].includes(method) || hasIdempotencyKey;
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -36,7 +43,7 @@ export async function fetchWithRetry(
       if (res.ok || res.status === 404) {
         return res;
       }
-      if (attempt < retries && res.status >= 500) {
+      if (attempt < retries && retrySafe && res.status >= 500) {
         console.warn(`[fetchWithRetry] Attempt ${attempt + 1} to ${url} failed with status ${res.status}. Retrying...`);
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
@@ -45,7 +52,7 @@ export async function fetchWithRetry(
     } catch (err: any) {
       clearTimeout(timeout);
       lastError = err;
-      if (attempt < retries) {
+      if (attempt < retries && retrySafe) {
         console.warn(`[fetchWithRetry] Attempt ${attempt + 1} to ${url} errored (${err?.name || err?.message}). Retrying...`);
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
@@ -81,19 +88,17 @@ export async function fetchApi<T>(
     'Content-Type': 'application/json',
   };
 
-  // Dual auth & cart fallback for browsers with strict privacy settings
+  // Authentication is cookie-only: the API validates the HttpOnly session cookie.
+  // Remove tokens persisted by older clients; they are no longer read or sent.
   if (typeof window !== 'undefined') {
     try {
-      const token = localStorage.getItem('seethapaati_access_token');
-      if (token) {
-        defaultHeaders['Authorization'] = `Bearer ${token}`;
-      }
+      localStorage.removeItem('seethapaati_access_token');
       const cartId = localStorage.getItem('seethapaati_guest_cart_id');
       if (cartId) {
         defaultHeaders['X-Cart-Id'] = cartId;
       }
     } catch {
-      // ignore
+      // ignore unavailable browser storage
     }
   }
 
@@ -171,26 +176,14 @@ export async function fetchApi<T>(
   const successJson = json as ApiResponse<T>;
   const data = successJson?.data !== undefined ? successJson.data : (json as T);
 
-  // Synchronize client-side storage for dual fallback
-  if (typeof window !== 'undefined' && data && typeof data === 'object') {
+  // Persist only the guest cart identifier; authentication remains in the HttpOnly cookie.
+  if (typeof window !== 'undefined' && data && typeof data === 'object' && 'cartId' in data) {
     try {
-      if ('accessToken' in data && typeof (data as any).accessToken === 'string') {
-        localStorage.setItem('seethapaati_access_token', (data as any).accessToken);
-      }
-      if ('cartId' in data && typeof (data as any).cartId === 'string') {
+      if (typeof (data as any).cartId === 'string') {
         localStorage.setItem('seethapaati_guest_cart_id', (data as any).cartId);
       }
     } catch {
-      // ignore
-    }
-  }
-
-  // Clear token on logout
-  if (cleanEndpoint === '/auth/logout' && typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem('seethapaati_access_token');
-    } catch {
-      // ignore
+      // ignore unavailable browser storage
     }
   }
 
