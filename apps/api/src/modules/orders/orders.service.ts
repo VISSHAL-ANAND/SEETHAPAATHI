@@ -22,9 +22,9 @@ const VALID_ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     OrderStatus.CANCELLED,
   ],
   [OrderStatus.PAYMENT_FAILED]: [OrderStatus.CANCELLED],
-  [OrderStatus.PAID]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
-  [OrderStatus.PROCESSING]: [OrderStatus.PACKED, OrderStatus.CANCELLED],
-  [OrderStatus.PACKED]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
+  [OrderStatus.PAID]: [OrderStatus.PROCESSING],
+  [OrderStatus.PROCESSING]: [OrderStatus.PACKED],
+  [OrderStatus.PACKED]: [OrderStatus.SHIPPED],
   [OrderStatus.SHIPPED]: [OrderStatus.IN_TRANSIT, OrderStatus.OUT_FOR_DELIVERY],
   [OrderStatus.IN_TRANSIT]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED],
   [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED],
@@ -241,7 +241,7 @@ export class OrdersService {
 
   /**
    * Cancel order by customer.
-   * Allowed ONLY if order is in PENDING_PAYMENT, PAID, or PROCESSING state.
+   * Customer cancellation is allowed only before payment is captured.
    */
   async cancelOrder(orderId: string, userId: string, reason?: string) {
     const order = await this.prisma.order.findUnique({
@@ -262,12 +262,7 @@ export class OrdersService {
       });
     }
 
-    const cancellableStatuses: OrderStatus[] = [
-      OrderStatus.PENDING_PAYMENT,
-      OrderStatus.PAID,
-      OrderStatus.PROCESSING,
-      OrderStatus.PACKED,
-    ];
+    const cancellableStatuses: OrderStatus[] = [OrderStatus.PENDING_PAYMENT, OrderStatus.PAYMENT_FAILED];
 
     if (!cancellableStatuses.includes(order.status)) {
       throw new BadRequestException({
@@ -277,7 +272,7 @@ export class OrdersService {
     }
 
     return await this.prisma.$transaction(async (tx) => {
-      // 1. Release active reservations inside transaction
+      // Only unpaid orders can reach this path; release any outstanding reservation.
       await this.inventoryService.cancelReservationsBySession(orderId, tx);
 
       // 2. Mark order as CANCELLED
