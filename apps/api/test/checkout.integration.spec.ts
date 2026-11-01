@@ -13,7 +13,7 @@ import { OutboxService } from '../src/modules/invoicing/outbox.service';
 import { NotificationService } from '../src/modules/notifications/notification.service';
 import { ConfigService } from '@nestjs/config';
 import { DiscountType, OrderStatus } from '@prisma/client';
-import { BadGatewayException, BadRequestException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, ConflictException } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 describe('Phase 3 End-to-End Checkout & Payment Integration Test (PostgreSQL)', () => {
