@@ -354,7 +354,13 @@ export class WebhookService {
       }
 
       const missingAllocations: Array<{ variantId: string; quantity: number }> = [];
-      const sortedVariantIds = [...requiredByVariant.keys()].sort((a, b) => a.localeCompare(b));
+      const variantsToLock = new Set<string>(requiredByVariant.keys());
+      for (const reservation of reservations) {
+        if (reservation.status === 'ACTIVE' || reservation.status === 'COMMITTED') {
+          variantsToLock.add(reservation.variantId);
+        }
+      }
+      const sortedVariantIds = [...variantsToLock].sort((a, b) => a.localeCompare(b));
 
       // Lock all inventory rows in one deterministic order before committing any
       // reservation or allocating an expired/missing quantity.
@@ -423,6 +429,34 @@ export class WebhookService {
         // Do not commit a subset of the order. Release all still-active holds and
         // queue a full refund because Razorpay has already captured the payment.
         await this.inventoryService.cancelReservationsBySession(payment.orderId, tx);
+
+        // If an older/partially-completed attempt left committed reservations,
+        // restore those quantities because this whole order is being refunded.
+        for (const reservation of reservations) {
+          if (reservation.status !== 'COMMITTED') continue;
+          const reversed = await tx.inventoryReservation.updateMany({
+            where: { id: reservation.id, status: 'COMMITTED' },
+            data: { status: 'CANCELLED' },
+          });
+          if (reversed.count === 1) {
+            await tx.$executeRaw`
+              UPDATE inventory
+              SET quantity_available = quantity_available + ${reservation.quantity},
+                  version = version + 1,
+                  updated_at = NOW()
+              WHERE variant_id = ${reservation.variantId}
+            `;
+            await tx.inventoryMovement.create({
+              data: {
+                variantId: reservation.variantId,
+                delta: reservation.quantity,
+                reason: 'SALE_COMMIT_ROLLED_BACK_REFUND',
+                referenceId: reservation.id,
+              },
+            });
+          }
+        }
+
         orderFinalStatus = OrderStatus.CANCELLED;
         orderStatusReason = 'PAYMENT_CAPTURED_OUT_OF_STOCK_REQUIRES_REFUND';
         this.logger.error(
