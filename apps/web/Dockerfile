@@ -16,6 +16,7 @@ COPY package.json ./
 COPY package-lock.json ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/web/package.json ./apps/web/
+COPY apps/api/package.json ./apps/api/
 
 # Install the exact dependency graph recorded in package-lock.json
 RUN npm ci
