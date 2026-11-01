@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seethapaati.com';
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://seethapaati.com').replace(/\/+$/, '');
 const PAGE_SIZE = 100;
 const MAX_PRODUCT_PAGES = 100;
 
