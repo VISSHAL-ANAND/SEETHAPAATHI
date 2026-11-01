@@ -17,7 +17,7 @@ The initial audit found Prisma migration drift, failing CI tests, unauthenticate
 Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They include migrations, order/cancellation policy, webhook inventory reconciliation and refund queueing, cart retention until payment capture, return/refund synchronization, fulfillment guards/history, authenticated image uploads, HttpOnly cookie-only browser auth, safer mutation retries, Redis hardening, production config validation, dynamic sitemap, CI web checks, and documentation updates.
 
 ## Verification
-- Clean-database Prisma migration deployment and API checks passed on intermediate commits.
+- Clean-database Prisma migration deployment and API checks passed on intermediate commits. The merchandising repair is now a new forward-only migration; the historical empty migration is preserved.
 - A mixed active/expired reservation regression test passed on an intermediate commit.
 - Web build passed after removing the build-time Google Fonts dependency.
 - The newest changes (production environment validation, dynamic sitemap, checkout/cart test changes, and documentation) require a fresh green CI run before sign-off.
