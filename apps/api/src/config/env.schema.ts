@@ -125,7 +125,7 @@ export const EnvSchema = z
         });
       }
 
-      const credentialPlaceholders = /placeholder|replace_with|your_|x{8,}/i;
+      const credentialPlaceholders = /placeholder|replace_with|your_|url_encoded|set_me|change_me|x{8,}/i;
       if (
         !data.RAZORPAY_KEY_ID.startsWith('rzp_live_') ||
         credentialPlaceholders.test(data.RAZORPAY_KEY_ID) ||
