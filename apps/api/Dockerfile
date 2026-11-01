@@ -11,13 +11,14 @@ RUN apk add --no-cache openssl libc6-compat
 FROM base AS builder
 WORKDIR /app
 
-# Copy package manifests across monorepo
+# Copy package manifests and lockfile across monorepo
 COPY package.json ./
+COPY package-lock.json ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/api/package.json ./apps/api/
 
-# Install all workspace dependencies
-RUN npm install
+# Install the exact workspace dependency graph
+RUN npm ci
 
 # Copy source code and Prisma schema
 COPY packages/contracts ./packages/contracts/
@@ -31,6 +32,9 @@ RUN npx --workspace=@seethapaati/api prisma generate
 
 # Build NestJS API
 RUN npm --workspace=@seethapaati/api run build
+
+# Remove build/test-only dependencies before copying node_modules to the runner.
+RUN npm prune --omit=dev
 
 # Stage 3: Lean Production Runner
 FROM node:20-alpine AS runner
