@@ -132,7 +132,7 @@ export class FulfillmentController {
    *
    * @route GET /shipping/serviceability?pincode=600004
    * Validates 6-digit Indian postal code (/^[1-9][0-9]{5}$/).
-   * Returns serviceable: true, carrier: "India Post Speed Post", estimatedDays: "3-5 Business Days".
+   * Returns an unverified result until a live carrier serviceability source is configured.
    */
   @Public()
   @SkipThrottle()
