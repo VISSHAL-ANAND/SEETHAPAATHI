@@ -7,7 +7,7 @@ Last updated: 2026-11-01
 - GitHub: https://github.com/VISSHAL-ANAND/SEETHAPAATHI
 - Current working branch: `main`
 - The current repair work was committed directly to `main`; no branches or pull requests were created.
-- Latest known commit when this handover was written: `9c24059913b03a1344f00b0dd86607f8afee08ab`. Re-check the branch head before continuing.
+- Latest known commit when this handover was written: `8edeca7ed096da58e77e4b16c6b179287303c662`. Re-check the branch head before continuing.
 - No repository-level `AGENTS.md`, `docs/STATE.md`, or `docs/TASKS.md` was present during the audit. This handover is the current continuity record.
 
 ## Product and architecture
@@ -36,8 +36,8 @@ Initial confirmed CI baseline:
 ## Repairs committed directly to main
 
 ### Database and CI
-- Filled the empty merchandising migration.
-- Added the missing order/shipment `IN_TRANSIT` enum values and order tracking columns/index.
+- Preserved the historical empty merchandising migration file and added a new forward-only migration for the missing column, so databases that already recorded the old migration can apply the repair.
+- Added the missing order/shipment `IN_TRANSIT` enum values and order tracking columns/index in a separate additive migration.
 - CI clean-database migration deploy now runs before API checks.
 - Web TypeScript, lint and build checks are now explicit CI steps.
 - Next.js no longer ignores TypeScript or ESLint build errors.
@@ -116,3 +116,7 @@ Latest CI must be re-checked after the recent environment validation, dynamic si
 8. Preserve Git history and continue direct-to-`main` only while the user maintains that instruction. Do not create branches unless the user changes this instruction.
 
 Never claim a test, visual check, deployment, or external integration succeeded unless the corresponding evidence is available.
+
+## Migration integrity caution
+
+The original empty merchandising migration was briefly populated and then restored to its original empty content. The final repair is in a new forward-only migration. Before deploying to any database, run `prisma migrate status` and inspect `_prisma_migrations` if that database may have deployed an intermediate commit during that brief window. If it recorded a checksum for the temporary contents, do not deploy blindly; reconcile the migration history deliberately.
