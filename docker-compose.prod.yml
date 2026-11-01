@@ -1,6 +1,6 @@
 services:
   # ---------------------------------------------------------------------------
-  # Database: PostgreSQL 16
+  # Database: PostgreSQL
   # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
@@ -8,7 +8,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-seethapaati_secure_db_pass_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the deployment environment}
       POSTGRES_DB: ${POSTGRES_DB:-seethapaati_prod}
     ports:
       - "127.0.0.1:5432:5432"
@@ -27,55 +27,49 @@ services:
     image: redis:7-alpine
     container_name: seethapaati-redis
     restart: always
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-seethapaati_redis_secret_2026}", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the deployment environment}", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-seethapaati_redis_secret_2026}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:?Set REDIS_PASSWORD in the deployment environment}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ---------------------------------------------------------------------------
-  # Backend API: NestJS (2+ replicas for high concurrency)
+  # Backend API: NestJS
   # ---------------------------------------------------------------------------
   api:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: always
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '1.5'
-          memory: 1G
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-seethapaati_secure_db_pass_2026}@postgres:5432/${POSTGRES_DB:-seethapaati_prod}?schema=public
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL using the postgres service hostname}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-seethapaati_redis_secret_2026}
-      JWT_SECRET: ${JWT_SECRET:-replace_with_a_secure_random_string_of_at_least_32_characters}
-      JWT_EXPIRES_IN: 7d
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,https://seethapaati.com}
-      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_live_placeholder}
-      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-rzp_secret_placeholder}
-      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-rzp_webhook_secret_placeholder}
-      RESEND_API_KEY: ${RESEND_API_KEY:-re_placeholder}
-      EMAIL_FROM: ${EMAIL_FROM:-orders@seethapaati.com}
-      SHIPROCKET_EMAIL: ${SHIPROCKET_EMAIL:-}
-      SHIPROCKET_PASSWORD: ${SHIPROCKET_PASSWORD:-}
-      SHIPROCKET_CHANNEL_ID: ${SHIPROCKET_CHANNEL_ID:-}
-      SHIPROCKET_WEBHOOK_TOKEN: ${SHIPROCKET_WEBHOOK_TOKEN:-}
-      SELLER_LEGAL_NAME: ${SELLER_LEGAL_NAME:-Seethapaati Foods Private Limited}
-      SELLER_TRADE_NAME: ${SELLER_TRADE_NAME:-Seethapaati}
-      SELLER_GSTIN: ${SELLER_GSTIN:-33ABCDE1234F1Z5}
-      SELLER_STATE_CODE: "33"
-      SELLER_PINCODE: "600004"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in the deployment environment}
+      JWT_SECRET: ${JWT_SECRET:?Set a unique JWT_SECRET of at least 32 characters}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set explicit trusted storefront origins}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:?Set RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:?Set RAZORPAY_KEY_SECRET}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:?Set RAZORPAY_WEBHOOK_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM:?Set a verified EMAIL_FROM address}
+      SELLER_LEGAL_NAME: ${SELLER_LEGAL_NAME:?Set the actual registered seller legal name}
+      SELLER_TRADE_NAME: ${SELLER_TRADE_NAME:?Set the actual seller trade name}
+      SELLER_GSTIN: ${SELLER_GSTIN:?Set the actual valid seller GSTIN}
+      SELLER_ADDRESS_LINE1: ${SELLER_ADDRESS_LINE1:?Set the registered seller address}
+      SELLER_ADDRESS_LINE2: ${SELLER_ADDRESS_LINE2:-}
+      SELLER_CITY: ${SELLER_CITY:?Set the registered seller city}
+      SELLER_STATE: ${SELLER_STATE:?Set the registered seller state}
+      SELLER_STATE_CODE: ${SELLER_STATE_CODE:?Set the GST state code matching the GSTIN}
+      SELLER_PINCODE: ${SELLER_PINCODE:?Set the registered seller PIN code}
     ports:
       - "3001:3001"
     depends_on:
@@ -85,35 +79,29 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # Storefront: Next.js (2+ replicas for high concurrency)
+  # Storefront: Next.js
   # ---------------------------------------------------------------------------
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     restart: always
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '1.5'
-          memory: 1G
     environment:
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set the browser-facing API URL including /api/v1}
       INTERNAL_API_URL: http://api:3001/api/v1
       UPLOAD_DIR: /app/apps/web/public/uploads
-      NEXT_PUBLIC_STORE_NAME: SEETHAPAATI
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://seethapaati.com}
-      NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:-rzp_live_placeholder}
+      NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-SEETHAPAATI}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set the canonical storefront URL}
+      NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:?Set NEXT_PUBLIC_RAZORPAY_KEY_ID}
     ports:
       - "3000:3000"
     depends_on:
       - api
     volumes:
       # Persistent uploads for single-host Docker deployments. Multi-host
-      # deployments should use shared object storage instead.
+      # deployments require shared object storage rather than a local volume.
       - webuploads:/app/apps/web/public/uploads
 
 volumes:
