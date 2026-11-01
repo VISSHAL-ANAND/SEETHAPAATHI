@@ -41,12 +41,7 @@ async function bootstrap() {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       const allowedOrigins = corsOrigin.split(',').map((o) => o.trim());
-      if (
-        allowedOrigins.includes(origin) ||
-        allowedOrigins.includes('*') ||
-        origin.endsWith('.onrender.com') ||
-        origin.includes('localhost')
-      ) {
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
         return callback(null, true);
       }
       callback(null, false);
