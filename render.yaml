@@ -1,19 +1,17 @@
 services:
   # ---------------------------------------------------------------------------
-  # Backend NestJS API Web Service (Horizontal Auto-scaling: 2 to 10 instances)
+  # Backend NestJS API
+  # Stateless service; scale only after load testing and queue/database review.
   # ---------------------------------------------------------------------------
   - type: web
     name: seethapaati-api
     runtime: node
     plan: starter
     region: singapore
-    buildCommand: npm install && npm run build:contracts && npm run build:api
+    numInstances: 1
+    buildCommand: npm ci && npm run build:contracts && npm run build:api
     startCommand: npm run start:api
     healthCheckPath: /health
-    scaling:
-      minInstances: 2
-      maxInstances: 10
-      targetCPUPercent: 70
     envVars:
       - key: NODE_ENV
         value: production
@@ -24,13 +22,10 @@ services:
           name: seethapaati-postgres
           property: connectionString
       - key: REDIS_URL
-        sync: false
-      - key: REDIS_HOST
-        sync: false
-      - key: REDIS_PORT
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
+        fromService:
+          type: keyvalue
+          name: seethapaati-redis
+          property: connectionString
       - key: CORS_ORIGIN
         sync: false
       - key: JWT_SECRET
@@ -44,32 +39,44 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
-        value: orders@seethapaati.com
+        sync: false
       - key: SELLER_LEGAL_NAME
-        value: Seethapaati Foods Private Limited
+        sync: false
       - key: SELLER_TRADE_NAME
-        value: Seethapaati
+        sync: false
       - key: SELLER_GSTIN
         sync: false
+      - key: SELLER_ADDRESS_LINE1
+        sync: false
+      - key: SELLER_ADDRESS_LINE2
+        sync: false
+      - key: SELLER_CITY
+        sync: false
+      - key: SELLER_STATE
+        sync: false
       - key: SELLER_STATE_CODE
-        value: "33"
+        sync: false
       - key: SELLER_PINCODE
-        value: "600004"
+        sync: false
 
   # ---------------------------------------------------------------------------
-  # Storefront Next.js App (Horizontal Auto-scaling: 2 to 10 instances)
+  # Storefront Next.js App
+  # A persistent disk keeps uploaded media across restarts. Render disks are
+  # single-instance, so this service intentionally runs one instance until
+  # shared object storage is integrated.
   # ---------------------------------------------------------------------------
   - type: web
     name: seethapaati-web
     runtime: node
     plan: starter
     region: singapore
-    buildCommand: npm install && npm run build:contracts && npm run build:web
+    numInstances: 1
+    buildCommand: npm ci && npm run build:contracts && npm run build:web
     startCommand: npm run start:web
-    scaling:
-      minInstances: 2
-      maxInstances: 10
-      targetCPUPercent: 70
+    disk:
+      name: seethapaati-uploads
+      mountPath: /opt/render/project/src/apps/web/public/uploads
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -77,24 +84,34 @@ services:
         value: 10000
       - key: NEXT_PUBLIC_API_URL
         sync: false
+      - key: INTERNAL_API_URL
+        sync: false
       - key: NEXT_PUBLIC_STORE_NAME
         value: SEETHAPAATI
       - key: NEXT_PUBLIC_SITE_URL
         value: https://seethapaati.com
       - key: NEXT_PUBLIC_RAZORPAY_KEY_ID
         sync: false
+      - key: UPLOAD_DIR
+        value: /opt/render/project/src/apps/web/public/uploads
+      - key: UPLOAD_ALLOWED_ORIGINS
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Redis Key Value for queues, caching and distributed coordination.
+  # noeviction prevents Redis from silently evicting BullMQ queue keys.
+  # ---------------------------------------------------------------------------
+  - type: keyvalue
+    name: seethapaati-redis
+    plan: starter
+    region: singapore
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal_snapshot
+    ipAllowList: []
 
 databases:
-  # Production PostgreSQL Database
   - name: seethapaati-postgres
     plan: starter
     databaseName: seethapaati
     user: postgres
     region: singapore
-
-  # Production Redis for High-Speed Caching, Throttling & Queues
-  - name: seethapaati-redis
-    plan: starter
-    type: redis
-    region: singapore
-    ipAllowList: [] # internal access only
