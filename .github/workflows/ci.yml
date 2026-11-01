@@ -44,3 +44,14 @@ jobs:
       - run: npm run typecheck --workspace=@seethapaati/web
       - run: npm run lint --workspace=@seethapaati/web
       - run: npm run build --workspace=@seethapaati/web
+      - name: Build API production image
+        run: docker build -f apps/api/Dockerfile -t seethapaati-api:ci .
+      - name: Build web production image
+        run: |
+          docker build -f apps/web/Dockerfile -t seethapaati-web:ci \
+            --build-arg INTERNAL_API_URL=http://api:3001/api/v1 \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.example.test/api/v1 \
+            --build-arg NEXT_PUBLIC_STORE_NAME=SEETHAPAATI \
+            --build-arg NEXT_PUBLIC_SITE_URL=https://store.example.test \
+            --build-arg NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_ci_public_key \
+            --build-arg NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=
