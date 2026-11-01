@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetchApi<AuthResponse>('/auth/login', {
+      const response = await fetchApi<Pick<AuthResponse, 'user' | 'expiresIn'>>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: email.trim(), password }),
       });
