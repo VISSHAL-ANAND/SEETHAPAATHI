@@ -243,7 +243,7 @@ export class WebhookService {
         });
         return {
           orderId: payment.orderId,
-          status: OrderStatus.PAID,
+          status: lockedPayment.order_status ?? payment.order?.status ?? OrderStatus.PAID,
           reason: 'DUPLICATE_PAYMENT_CAPTURED_WEBHOOK',
         };
       }
