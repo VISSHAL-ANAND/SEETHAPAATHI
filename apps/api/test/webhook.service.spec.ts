@@ -475,7 +475,7 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       expect(result.status).toBe(OrderStatus.CANCELLED);
       // Payment is CAPTURED in DB (since Razorpay charged the card)
       expect(prisma.payment.updateMany).toHaveBeenCalledWith({
-        where: { id: 'pay_db_late_oos', status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+        where: { id: 'pay_db_late_oos', status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED, PaymentStatus.FAILED] } },
         data: { status: PaymentStatus.CAPTURED, gatewayPaymentId: 'pay_rzp_99' },
       });
       // Order is CANCELLED for refund
