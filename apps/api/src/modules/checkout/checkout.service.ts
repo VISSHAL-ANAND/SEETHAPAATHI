@@ -314,7 +314,10 @@ export class CheckoutService {
             grandTotalCents: computedBreakdown.grandTotalCents,
             shippingAddressSnapshot: dto.shippingAddress,
             billingAddressSnapshot: dto.shippingAddress,
-            notes: couponId ? JSON.stringify({ couponId, couponCode: dto.couponCode }) : null,
+            notes: JSON.stringify({
+              cartId: cart.id,
+              ...(couponId ? { couponId, couponCode: dto.couponCode } : {}),
+            }),
           },
         });
 
@@ -335,7 +338,10 @@ export class CheckoutService {
             grandTotalCents: computedBreakdown.grandTotalCents,
             shippingAddressSnapshot: dto.shippingAddress,
             billingAddressSnapshot: dto.shippingAddress,
-            notes: couponId ? JSON.stringify({ couponId, couponCode: dto.couponCode }) : null,
+            notes: JSON.stringify({
+              cartId: cart.id,
+              ...(couponId ? { couponId, couponCode: dto.couponCode } : {}),
+            }),
           },
         });
       }
@@ -439,8 +445,8 @@ export class CheckoutService {
         data: { gatewayOrderId: rzpOrder.gatewayOrderId },
       });
 
-      // 5. Clear user's cart now that gateway order was successfully confirmed
-      await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+      // Keep the cart intact until Razorpay confirms payment through the webhook.
+      // The webhook removes only the quantities included in the immutable order snapshot.
     } catch (err) {
       this.logger.error(
         `Failed to create Razorpay order for order ${order.id}. Releasing reservations: ${(err as Error).message}`,
