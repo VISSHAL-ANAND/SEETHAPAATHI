@@ -1,9 +1,4 @@
 -- Keep the deployed PostgreSQL schema aligned with schema.prisma.
--- Do not edit historical migrations: this additive migration also repairs the
--- previously empty merchandising migration for databases where it was recorded.
-ALTER TABLE "products"
-  ADD COLUMN IF NOT EXISTS "merchandising" JSONB DEFAULT '{}';
-
 -- Enum values are additive and safe for existing rows.
 ALTER TYPE "OrderStatus" ADD VALUE IF NOT EXISTS 'IN_TRANSIT';
 ALTER TYPE "ShipmentStatus" ADD VALUE IF NOT EXISTS 'IN_TRANSIT';
