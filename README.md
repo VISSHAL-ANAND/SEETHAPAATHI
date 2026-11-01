@@ -39,7 +39,7 @@ scripts/        Operational and deployment scripts
    npm ci
    ```
 
-2. Configure the API environment. Start from `.env.example` and supply local PostgreSQL, Redis, JWT, Razorpay test, and seller configuration values. Do not use example credentials or placeholder statutory seller details in production.
+2. Configure the API environment. `.env.example` is a production-oriented template, not a ready-to-run local file. For local development, set `NODE_ENV=development`, point `DATABASE_URL` at your local PostgreSQL host (usually `localhost`), set `REDIS_HOST=localhost`, set `CORS_ORIGIN=http://localhost:3000`, and use Razorpay test credentials. Set the web values to your local API/storefront origins (typically API `http://localhost:4000/api/v1` and site `http://localhost:3000`). Do not use example credentials or placeholder statutory seller details in production.
 
 3. Generate the Prisma client and apply migrations to your development database:
 
