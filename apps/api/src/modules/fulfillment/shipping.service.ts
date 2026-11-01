@@ -93,11 +93,8 @@ export class ShippingService {
         throw new NotFoundException({ error: 'ORDER_NOT_FOUND', message: 'Order not found' });
       }
 
-      const shippableStatuses: OrderStatus[] = [
-        OrderStatus.PAID,
-        OrderStatus.PROCESSING,
-        OrderStatus.PACKED,
-      ];
+      // PACKED is the only valid predecessor of SHIPPED in the order state machine.
+      const shippableStatuses: OrderStatus[] = [OrderStatus.PACKED];
       if (!shippableStatuses.includes(order.status)) {
         throw new BadRequestException({
           error: 'ORDER_NOT_SHIPPABLE',
@@ -277,11 +274,7 @@ export class ShippingService {
       if (!order) throw new NotFoundException({ error: 'ORDER_NOT_FOUND' });
 
       if (
-        !([
-          OrderStatus.PAID,
-          OrderStatus.PROCESSING,
-          OrderStatus.PACKED,
-        ] as OrderStatus[]).includes(order.status)
+        order.status !== OrderStatus.PACKED
       ) {
         throw new BadRequestException({
           error: 'ORDER_NOT_SHIPPABLE',
