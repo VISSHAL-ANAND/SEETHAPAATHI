@@ -99,7 +99,7 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set the browser-facing API URL including /api/v1}
       INTERNAL_API_URL: http://api:3001/api/v1
       UPLOAD_DIR: /app/apps/web/public/uploads
-      UPLOAD_ALLOWED_ORIGINS: ${CORS_ORIGIN:?Set explicit trusted storefront origins}
+      UPLOAD_ALLOWED_ORIGINS: ${UPLOAD_ALLOWED_ORIGINS:?Set explicit trusted storefront origins}
       NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-SEETHAPAATI}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set the canonical storefront URL}
       NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:?Set NEXT_PUBLIC_RAZORPAY_KEY_ID}
