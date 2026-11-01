@@ -222,12 +222,19 @@ export class WebhookService {
       // Serialize duplicate deliveries on the payment row. Without this lock,
       // a concurrent webhook could observe an already-settled reservation and
       // incorrectly run the post-expiry stock allocation path a second time.
-      const lockedPayments = await tx.$queryRaw<Array<{ status: PaymentStatus }>>`
-        SELECT status FROM payments WHERE id = ${payment.id} FOR UPDATE
+      const lockedPayments = await tx.$queryRaw<Array<{
+        status: PaymentStatus;
+        order_status: OrderStatus;
+      }>>`
+        SELECT p.status, o.status AS order_status
+        FROM payments p
+        INNER JOIN orders o ON o.id = p.order_id
+        WHERE p.id = ${payment.id}
+        FOR UPDATE OF p, o
       `;
       const lockedPayment = lockedPayments[0];
       if (!lockedPayment) {
-        throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND', message: 'Payment disappeared during webhook processing.' });
+        throw new NotFoundException({ error: 'PAYMENT_NOT_FOUND', message: 'Payment or order disappeared during webhook processing.' });
       }
       if (lockedPayment.status === PaymentStatus.CAPTURED) {
         await tx.paymentWebhookEvent.update({
@@ -238,6 +245,46 @@ export class WebhookService {
           orderId: payment.orderId,
           status: OrderStatus.PAID,
           reason: 'DUPLICATE_PAYMENT_CAPTURED_WEBHOOK',
+        };
+      }
+
+      // A customer may cancel an unpaid order while a delayed gateway capture is
+      // arriving. Locking payment + order together prevents stock settlement from
+      // racing past that cancellation. Captured money must be refunded, not fulfilled.
+      const currentOrderStatus = lockedPayment.order_status ?? payment.order?.status;
+      if (currentOrderStatus !== OrderStatus.PENDING_PAYMENT) {
+        await this.inventoryService.cancelReservationsBySession(payment.orderId, tx);
+        await tx.payment.updateMany({
+          where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+          data: { status: PaymentStatus.CAPTURED, gatewayPaymentId },
+        });
+        await tx.refund.create({
+          data: {
+            orderId: payment.orderId,
+            paymentId: payment.id,
+            amountCents: payment.amountCents,
+            currency: payment.currency,
+            status: RefundStatus.PENDING,
+            reason: RefundReason.REFUND_REQUIRED_OTHER,
+            idempotencyKey: `auto-refund-order-not-pending:${payment.id}`,
+            notes: `Automatic refund required because payment was captured while the order was already ${currentOrderStatus}.`,
+          },
+        });
+        await tx.paymentTransaction.create({
+          data: {
+            paymentId: payment.id,
+            eventType: 'payment.captured.order_not_pending',
+            payload: rawPayload,
+          },
+        });
+        await tx.paymentWebhookEvent.update({
+          where: { eventId },
+          data: { processed: true, processedAt: new Date(), processingLeaseUntil: null, processingToken: null },
+        });
+        return {
+          orderId: payment.orderId,
+          status: currentOrderStatus,
+          reason: 'PAYMENT_CAPTURED_ORDER_NOT_PENDING_REFUND_QUEUED',
         };
       }
 
