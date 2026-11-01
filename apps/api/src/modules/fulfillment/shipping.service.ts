@@ -269,6 +269,15 @@ export class ShippingService {
    * Create standard shipment without immediately dispatching
    */
   async create(orderId: string, carrier = 'India Post', trackingNumber?: string, trackingUrl?: string) {
+    if (!/^india post(?: speed post)?$/i.test((carrier || '').trim())) {
+      throw new BadRequestException({
+        error: 'UNSUPPORTED_COURIER',
+        message: 'This deployment currently supports India Post tracking only.',
+      });
+    }
+    // Always generate the official tracking URL from the consignment number.
+    void trackingUrl;
+
     return this.prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: orderId } });
       if (!order) throw new NotFoundException({ error: 'ORDER_NOT_FOUND' });
@@ -286,7 +295,7 @@ export class ShippingService {
       if (existing) return existing;
 
       const status = trackingNumber ? ShipmentStatus.AWB_ASSIGNED : ShipmentStatus.CREATED;
-      const finalTrackingUrl = trackingUrl || (trackingNumber ? this.getIndiaPostTrackingUrl(trackingNumber) : undefined);
+      const finalTrackingUrl = trackingNumber ? this.getIndiaPostTrackingUrl(trackingNumber) : undefined;
 
       return tx.shipment.create({
         data: {
