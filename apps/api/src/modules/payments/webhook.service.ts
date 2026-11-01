@@ -255,7 +255,7 @@ export class WebhookService {
       if (currentOrderStatus !== OrderStatus.PENDING_PAYMENT) {
         await this.inventoryService.cancelReservationsBySession(payment.orderId, tx);
         await tx.payment.updateMany({
-          where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+          where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED, PaymentStatus.FAILED] } },
           data: { status: PaymentStatus.CAPTURED, gatewayPaymentId },
         });
         await tx.refund.create({
@@ -290,7 +290,7 @@ export class WebhookService {
 
       // 1. Transition Payment -> CAPTURED
       await tx.payment.updateMany({
-        where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+        where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED, PaymentStatus.FAILED] } },
         data: {
           status: PaymentStatus.CAPTURED,
           gatewayPaymentId,
@@ -597,7 +597,7 @@ export class WebhookService {
     await this.prisma.$transaction(async (tx) => {
       // 1. Transition Payment -> FAILED
       await tx.payment.updateMany({
-        where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+        where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED, PaymentStatus.FAILED] } },
         data: { status: PaymentStatus.FAILED, gatewayPaymentId },
       });
 
