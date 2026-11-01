@@ -1,208 +1,141 @@
-# 🚀 SEETHAPAATI — Production Launch & Go-Live Guide
+# SEETHAPAATHI — Production Deployment Guide
 
-Welcome to the production deployment guide for **Seethapaati**. This document provides the complete, step-by-step instructions for deploying the backend API and Next.js frontend to production with live Razorpay payments, Shiprocket courier tracking, Redis multi-layered caching, Google Rich Snippets SEO, and horizontal scaling for 5,000+ concurrent users.
+This guide describes the deployment path supported by the current repository. It intentionally does not promise automatic courier booking, live PIN-code serviceability, or a particular throughput target unless those integrations have been configured and load-tested.
 
----
+## 1. Architecture
 
-## 📋 1. Exact List of Environment Variables
+- Next.js storefront and admin console: `apps/web`
+- NestJS API: `apps/api`
+- PostgreSQL with Prisma migrations
+- Redis/BullMQ for background jobs and distributed coordination
+- Razorpay for payment collection and refund processing
+- India Post tracking workflow with manual admin dispatch/tracking updates
 
-You only need to supply your live credentials into the environment configuration of your deployment platforms.
+## 2. Required environment configuration
 
-### 🌐 A. Frontend Web (`apps/web` or Vercel Environment Variables)
+Use `.env.example` as a variable checklist, not as a source of production credentials. The example seller identity and GSTIN are placeholders. The API deliberately rejects placeholder seller details and placeholder GSTIN values in production.
 
-| Variable | Description | Example / Recommended Value |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | Live backend API URL including `/api/v1` | `https://api.seethapaati.com/api/v1` |
-| `NEXT_PUBLIC_STORE_NAME` | Display name of the store | `SEETHAPAATI` |
-| `NEXT_PUBLIC_SITE_URL` | Public production storefront URL | `https://seethapaati.com` |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Public Razorpay Live Key ID | `rzp_live_xxxxxxxxxxxxxxxx` |
-| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Google Search Console verification code (optional) | `google-site-verification-token` |
-| `NEXT_PUBLIC_ENABLE_ANALYTICS` | Analytics toggle | `false` or `true` |
+### Web application
 
----
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Browser-facing API URL, including `/api/v1` |
+| `INTERNAL_API_URL` | Server-to-server API URL; in Docker Compose use `http://api:3001/api/v1` |
+| `NEXT_PUBLIC_SITE_URL` | Canonical storefront origin |
+| `NEXT_PUBLIC_STORE_NAME` | Store display name |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Public Razorpay key ID |
+| `UPLOAD_DIR` | Persistent upload directory; Docker Compose uses the mounted web uploads volume |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Optional Search Console token |
 
-### ⚙️ B. Backend API (`apps/api` or Render / Server Environment Variables)
+### API
 
-| Variable | Description | Example / Recommended Value |
-| :--- | :--- | :--- |
-| `NODE_ENV` | Environment mode | `production` |
-| `PORT` | HTTP port for NestJS API server | `3001` (or `10000` on Render) |
-| `DATABASE_URL` | PostgreSQL connection URL | `postgresql://user:pass@host:5432/seethapaati?schema=public` |
-| `REDIS_HOST` | Redis hostname | `seethapaati-redis` or `localhost` |
-| `REDIS_PORT` | Redis port | `6379` |
-| `REDIS_PASSWORD` | Redis password (if required) | `""` or your redis password |
-| `JWT_SECRET` | Secret key for JWT signing (**must be >= 32 chars in production**) | Generate via: `openssl rand -base64 32` |
-| `JWT_EXPIRES_IN` | Auth token validity duration | `7d` |
-| `CORS_ORIGIN` | Allowed web origins (comma-separated, no wildcards) | `https://seethapaati.com,https://www.seethapaati.com` |
-| `RAZORPAY_KEY_ID` | Razorpay Live Key ID | `rzp_live_xxxxxxxxxxxxxxxx` |
-| `RAZORPAY_KEY_SECRET` | Razorpay Live Secret Key | `xxxxxxxxxxxxxxxxxxxxxxxx` |
-| `RAZORPAY_WEBHOOK_SECRET` | Secret configured on Razorpay Webhook Dashboard | `xxxxxxxxxxxxxxxxxxxxxxxx` |
-| `RESEND_API_KEY` | Resend API key for transactional emails | `re_xxxxxxxxxxxxxxxxxxxxxxxx` |
-| `EMAIL_FROM` | Verified sender email address | `orders@seethapaati.com` |
-| `SHIPROCKET_EMAIL` | Shiprocket account email (optional for courier automation) | `logistics@seethapaati.com` |
-| `SHIPROCKET_PASSWORD` | Shiprocket account password | `YourPassword` |
-| `SHIPROCKET_CHANNEL_ID` | Custom Shiprocket Channel ID (if configured) | `""` |
-| `SHIPROCKET_WEBHOOK_TOKEN` | Shared secret token for Shiprocket tracking webhook | `your_tracking_secret` |
-| `SELLER_LEGAL_NAME` | Legal registered entity name | `Seethapaati Foods Private Limited` |
-| `SELLER_TRADE_NAME` | Brand trade name | `Seethapaati` |
-| `SELLER_GSTIN` | 15-character statutory GSTIN number | `33ABCDE1234F1Z5` |
-| `SELLER_STATE` | State of primary business location | `Tamil Nadu` |
-| `SELLER_STATE_CODE` | 2-digit GST state code (must match first 2 digits of GSTIN) | `33` |
-| `SELLER_PINCODE` | 6-digit postal code | `600004` |
-| `ADMIN_INITIAL_PASSWORD` | Password for seeded `admin@seethapaati.com` account | `YourStrongAdminPassword2026!` |
+| Variable | Purpose |
+|---|---|
+| `NODE_ENV` | Set to `production` |
+| `PORT` | API listening port |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Recommended Redis connection string; use `rediss://` for TLS providers |
+| `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Alternative Redis connection configuration |
+| `JWT_SECRET` | Unique random secret, at least 32 characters in production |
+| `JWT_EXPIRES_IN` | Session lifetime |
+| `CORS_ORIGIN` | Explicit comma-separated trusted web origins; no wildcard |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay API credentials |
+| `RAZORPAY_WEBHOOK_SECRET` | Exact secret configured for the Razorpay webhook |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email provider and verified sender |
+| `SELLER_LEGAL_NAME`, `SELLER_TRADE_NAME` | Actual registered seller identity |
+| `SELLER_GSTIN` | Actual valid GSTIN; state prefix must match `SELLER_STATE_CODE` |
+| `SELLER_ADDRESS_LINE1`, `SELLER_ADDRESS_LINE2`, `SELLER_CITY`, `SELLER_STATE`, `SELLER_STATE_CODE`, `SELLER_PINCODE` | Actual statutory seller address |
 
----
+Also configure `ADMIN_INITIAL_PASSWORD` before running the initial seed. Do not commit production secrets or real customer data.
 
-## 🛠️ 2. Build and Start Commands
+## 3. Install and build
 
-The repository is configured as an npm workspaces monorepo.
+From the repository root:
 
-### 📦 Clean Installation & Compilation
 ```bash
-# 1. Install all monorepo dependencies
-npm install
-
-# 2. Compile contracts, NestJS API, and Next.js frontend
-npm run build
+npm ci
+npm run db:generate
+npm run build:all
+npm run typecheck
+npm run lint
 ```
 
-### 🗄️ Database Setup & Initial Seed
-Run these against your production PostgreSQL database before launching traffic:
-```bash
-# 1. Run database migrations to create all tables
-npm run db:migrate
+The root `npm run build` command does not build every workspace. Use `npm run build:all` when a complete contracts + API + web build is required.
 
-# 2. Seed default roles, initial admin, categories, GST tax rates, and curated products
+## 4. Database deployment
+
+Back up the production database before applying migrations. Then deploy the committed migrations:
+
+```bash
+npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+```
+
+Do not use `prisma migrate dev` against production. Do not patch production tables manually to work around migration drift. Verify the migration history on a clean staging database before production rollout.
+
+Seed only when initializing a new environment:
+
+```bash
 npm run db:seed
 ```
 
-### 🚀 Production Start Commands
-- **Backend API Server**:
-  ```bash
-  npm run start:api
-  ```
-  *(Runs `node dist/main` from `apps/api` listening on configured `PORT`)*
+Do not rerun seed operations against an existing production store without reviewing the seed script's effects.
 
-- **Frontend Storefront**:
-  ```bash
-  npm run start:web
-  ```
-  *(Runs Next.js production server from `apps/web`)*
+## 5. Docker Compose deployment
 
----
+Configure all required environment variables in the deployment environment before starting the stack:
 
-## 🐳 3. Docker Containerization & Horizontal Scaling
-
-For automated container deployment capable of handling 5,000+ concurrent users:
-
-### Multi-Stage Dockerfiles:
-- **`apps/api/Dockerfile`**: Optimized Node 20 Alpine image running NestJS with Prisma client and `/api/v1/health` healthchecks.
-- **`apps/web/Dockerfile`**: Standalone Next.js Node 20 Alpine container with AVIF/WebP image optimization and immutable caching.
-
-### Start Entire Production Cluster:
 ```bash
-# Build and run Postgres, Redis, API (2 replicas), and Web (2 replicas)
+docker compose -f docker-compose.prod.yml config
 docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
 ```
 
-### Scale Services Horizontally:
-```bash
-# Scale API to 4 replicas and Web to 4 replicas
-docker compose -f docker-compose.prod.yml up -d --scale api=4 --scale web=4
-```
+PostgreSQL and Redis are bound to localhost for host-only administration. Redis uses `noeviction` and AOF persistence because evicting BullMQ queue keys can lose job state. Monitor Redis memory and queue health; `noeviction` causes writes to fail when Redis reaches its memory limit.
 
----
+The Compose uploads volume is suitable for a single Docker host. It is not shared storage across multiple hosts. If web replicas run on different hosts, configure shared object storage or a shared filesystem and point `UPLOAD_DIR`/the upload implementation at that storage before enabling multi-host deployment.
 
-## 📦 4. Automated Courier & Order Tracking Setup
+The Compose file is a single-host deployment baseline. Do not scale API or web replicas with fixed host port mappings unless a load balancer/reverse proxy and shared storage are configured. No 5,000-concurrent-user capacity claim is made without representative load testing.
 
-Seethapaati includes dual-mode shipping fulfillment:
+## 6. Razorpay configuration
 
-### Mode 1: Automated Shiprocket Logistics
-1. Supply `SHIPROCKET_EMAIL` and `SHIPROCKET_PASSWORD` in your backend `.env`.
-2. When a customer pays, `pushOrderToShiprocket()` creates the order and requests pickup.
-3. In Shiprocket Dashboard -> **Settings** -> **Webhooks**, register:
+1. Configure the live Razorpay key ID and secret in the API environment.
+2. Configure the public key ID in the web environment.
+3. In the Razorpay dashboard, register the webhook endpoint:
+
+   ```text
+   https://<your-api-host>/api/v1/webhooks/razorpay
    ```
-   https://api.seethapaati.com/api/v1/webhooks/shipping
-   ```
-   Shiprocket will automatically push real-time checkpoints (`IN_TRANSIT`, `OUT_FOR_DELIVERY`, `DELIVERED`).
 
-### Mode 2: Manual Admin Tracking (Fallback)
-If Shiprocket is not configured:
-1. Log in to `/admin/orders`.
-2. Select any `PAID` or `PACKED` order.
-3. Enter the carrier name (e.g., Delhivery, Blue Dart, DTDC, India Post), AWB number, and Tracking URL.
-4. Click **Dispatch & Mark Shipped**. The order flips to `SHIPPED`, records timestamps, and notifies the customer.
-5. Customers can track their shipment at `/orders/[orderId]` with live progress checkpoints and direct courier links.
+4. Set the webhook secret to the same value as `RAZORPAY_WEBHOOK_SECRET`.
+5. Enable at least `payment.captured` and `payment.failed`.
+6. Perform a controlled end-to-end payment and refund test in a non-production environment before switching to live traffic.
 
----
+Payment state is finalized by the signed server-side webhook, not by the browser success callback. A captured payment whose full inventory allocation fails is cancelled and entered into the refund reconciliation queue.
 
-## 💳 5. Razorpay Live Webhook Setup Checklist
+## 7. Shipping and serviceability
 
-1. Log in to your [Razorpay Dashboard](https://dashboard.razorpay.com).
-2. Switch to **Live Mode** in the top navigation.
-3. Go to **Account & Settings** → **Webhooks** → **Add New Webhook**.
-4. In the **Webhook URL** field, enter:
-   ```
-   https://api.seethapaati.com/api/v1/webhooks/razorpay
-   ```
-   *(Replace `api.seethapaati.com` with your live backend API domain)*
-5. In the **Secret** field, enter a secure random secret (or generate one) and paste that exact string into your backend `.env` as `RAZORPAY_WEBHOOK_SECRET`.
-6. Under **Active Events**, select:
-   - ✅ `payment.captured`
-   - ✅ `payment.failed`
-   - ✅ `payment.authorized`
-7. Click **Create Webhook**.
+The current shipping workflow supports admin-entered India Post tracking numbers and shipment status updates. It does not contain a verified Shiprocket integration. Do not configure Shiprocket credentials or expect automated courier booking from this code.
 
----
+PIN-code format validation is not a live India Post serviceability lookup. Until an authoritative serviceability provider is integrated, the storefront reports the destination as unverified and does not promise delivery dates.
 
-## 🔍 6. Google Rich Snippets SEO & Structured Data
+## 8. Upload storage
 
-The storefront includes automated Google-compliant JSON-LD structured data:
-- **Homepage (`/`)**: Injects `Organization` schema with logo, social links, and `WebSite` with `SearchAction` deep-linking.
-- **Product Details (`/shop/[slug]`)**: Injects `Product`, `Offer` (price, INR currency, stock availability, seller info), `Brand`, and `BreadcrumbList`.
-- **Sitemap & Robots**: Pre-configured `sitemap.ts` and `robots.ts` ensuring Googlebot indexes all active products immediately.
+The admin upload endpoint requires a valid API session with `products.create` permission. It accepts PNG, JPEG, and WebP images up to 5 MB, verifies file signatures, and generates server-side filenames. SVG uploads are rejected.
 
----
+For a single-host Docker deployment, the Compose volume persists files across container recreation. For managed/serverless or multi-host hosting, local container storage is not sufficient; configure durable shared object storage before relying on uploaded media.
 
-## 🌐 7. Custom Domain Configuration Checklist
+## 9. Pre-launch verification
 
-### Domain Setup for Frontend (`seethapaati.com`):
-1. In your Vercel or hosting project dashboard, go to **Settings** → **Domains**.
-2. Add `seethapaati.com` and `www.seethapaati.com`.
-3. In your DNS registrar (GoDaddy, Cloudflare, Namecheap), add the DNS records provided by Vercel:
-   - **A Record**: `@` → `76.76.21.21`
-   - **CNAME Record**: `www` → `cname.vercel-dns.com`
-4. Wait for SSL certificate issuance (automatic via Let's Encrypt).
+- [ ] Configure actual seller legal name, address, state code, and GSTIN; have tax/legal details reviewed.
+- [ ] Configure production PostgreSQL and verify backups/restore procedure.
+- [ ] Configure Redis TLS, persistence, memory alerts, and queue monitoring.
+- [ ] Configure strong JWT, database, Redis, Razorpay, and email secrets.
+- [ ] Configure explicit CORS origins and HTTPS.
+- [ ] Apply migrations on a clean staging database and verify rollback/restore plan.
+- [ ] Run CI on the exact deployment commit; confirm API and web checks are green.
+- [ ] Test customer signup/login, cart, checkout, successful payment, failed payment, duplicate webhook, out-of-stock refund, return, full refund, partial refund, and shipment tracking.
+- [ ] Verify upload durability on the actual hosting platform.
+- [ ] Run representative load tests before selecting replica counts or claiming capacity.
+- [ ] Verify statutory invoice output and actual seller data before issuing live invoices.
 
-### Domain Setup for Backend API (`api.seethapaati.com`):
-1. In your backend host (Render, Railway, or VPS), assign the custom domain `api.seethapaati.com`.
-2. In your DNS registrar, add:
-   - **CNAME Record**: `api` → pointing to your hosting provider's assigned address (e.g. `seethapaati-api.onrender.com`).
-3. Ensure CORS on the backend allows `https://seethapaati.com` and `https://www.seethapaati.com`.
-
----
-
-## 🔐 8. Default Administrative Access
-
-After running `npm run db:seed`, your store has an administrator account ready:
-- **Admin Portal URL**: `https://seethapaati.com/admin/login`
-- **Email**: `admin@seethapaati.com`
-- **Password**: Configured via `ADMIN_INITIAL_PASSWORD` (default: `Admin@Seethapaati2026`)
-
-*Note: Immediately change the default admin password in production via the account settings.*
-
----
-
-## ✅ 9. Verified Pre-Flight Checklist
-
-- [x] Monorepo passes typecheck cleanly across all workspaces (`npm run typecheck`).
-- [x] Production build passes cleanly with zero errors (`npm run build`).
-- [x] All 19 backend test suites and 138 unit/integration tests pass.
-- [x] Redis caching layer with `catalog:*` invalidation and rate-limiting guard configured.
-- [x] Sub-second loading speed with Next.js ISR (`revalidate = 60`), AVIF/WebP image formats, and cache headers.
-- [x] Google Rich Snippets JSON-LD structured data on Homepage and Product pages.
-- [x] Multi-stage Dockerfiles and `docker-compose.prod.yml` ready for horizontal scaling (5,000+ users).
-- [x] Dual-mode courier tracking (Shiprocket automated dispatch + manual admin fallback).
-- [x] Razorpay client SDK and HMAC SHA256 timing-safe verification verified.
-- [x] Full customer flows (Signup, Login, Shop, Cart, Checkout, Order Tracking) wired end-to-end.
-- [x] Full admin operations (Order management, shipment tracking creation, product catalog editing) verified.
+A passing CI workflow is necessary but does not replace a staging payment test, restore drill, security review, or legal/tax review.
