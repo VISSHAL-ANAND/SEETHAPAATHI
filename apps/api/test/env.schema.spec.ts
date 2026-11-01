@@ -70,7 +70,7 @@ describe('EnvSchema - Configuration Validation', () => {
       RAZORPAY_KEY_ID: 'rzp_live_ci_key_12345',
       RAZORPAY_KEY_SECRET: 'secret_razorpay_ci_key_1234567890',
       RAZORPAY_WEBHOOK_SECRET: 'secret_webhook_ci_key_1234567890',
-      RESEND_API_KEY: 're_test_phase9_ci',
+      RESEND_API_KEY: 're_prod_ci_key_123456',
       EMAIL_FROM: 'orders@example.test',
       SELLER_TRADE_NAME: 'Example Pantry',
       SELLER_STATE: 'Tamil Nadu',
