@@ -111,7 +111,7 @@ services:
 
 databases:
   - name: seethapaati-postgres
-    plan: starter
+    plan: basic-1gb
     databaseName: seethapaati
     user: postgres
     region: singapore
