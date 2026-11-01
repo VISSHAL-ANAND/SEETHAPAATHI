@@ -70,7 +70,8 @@ export class ApiClientError extends Error {
   constructor(
     public code: string,
     message: string,
-    public details?: unknown
+    public details?: unknown,
+    public status = 0
   ) {
     super(message);
     this.name = 'ApiClientError';
@@ -129,7 +130,9 @@ export async function fetchApi<T>(
     if (!response.ok) {
       throw new ApiClientError(
         `HTTP_${response.status}`,
-        text || `Request failed with HTTP status ${response.status}`
+        text || `Request failed with HTTP status ${response.status}`,
+        undefined,
+        response.status
       );
     }
     return (text as unknown) as T;
@@ -173,7 +176,8 @@ export async function fetchApi<T>(
     throw new ApiClientError(
       errorJson?.error?.code || `HTTP_${response.status}`,
       errorMessage || `Request failed with status ${response.status}`,
-      errorJson?.error?.details
+      errorJson?.error?.details,
+      response.status
     );
   }
 
