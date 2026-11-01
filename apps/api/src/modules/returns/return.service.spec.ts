@@ -15,6 +15,7 @@ describe('ReturnService return quantity accounting', () => {
       },
       return: {
         findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
       },
       $queryRaw: jest.fn((strings: TemplateStringsArray) => {
         const query = strings.join('');
@@ -43,6 +44,6 @@ describe('ReturnService return quantity accounting', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
 
-    expect(tx.return.create).toBeUndefined();
+    expect(tx.return.create).not.toHaveBeenCalled();
   });
 });
