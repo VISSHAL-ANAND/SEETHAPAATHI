@@ -20,13 +20,16 @@ Repairs committed so far are recorded in [HANDOFF.md](../HANDOFF.md). They inclu
 - Reviewed the return and refund services on `main`.
 - Fixed completed-return quantities being excluded from cumulative return accounting; previously completed units could be requested again.
 - Fixed refund idempotency-key reuse: an existing key must match order, amount, reason, and return ID before any Razorpay operation; mismatches now return a conflict.
-- Added focused regression tests for both cases. CI/test execution is pending; do not treat these changes as verified until the current commit's checks complete.
+- Added focused regression tests for both cases.
+- GitHub Actions CI run #142 on commit `7ca5e2c1c5302b879ed4450c5f7ba6958510b4db` passed all steps: clean PostgreSQL migration deployment, API typecheck/lint/tests/build, web typecheck/lint/build, both Docker image builds, and production Compose validation.
+- The separate Vercel commit status failed only because the deployment provider reported `Deployment rate limited — retry in 24 hours`; GitHub Actions CI itself succeeded.
+- Phase 2 automated CI verification is complete. Live Razorpay refund testing and dedicated PostgreSQL concurrency/reconciliation scenarios remain outstanding.
 
 ## Verification
 - Clean-database Prisma migration deployment and API checks passed on intermediate commits. The merchandising repair is now a new forward-only migration; the historical empty migration is preserved.
 - A mixed active/expired reservation regression test passed on an intermediate commit.
 - Web build passed after removing the build-time Google Fonts dependency.
-- The newest changes (production environment validation, dynamic sitemap, checkout/cart test changes, and documentation) require a fresh green CI run before sign-off.
+- GitHub Actions run #142 passed on the latest documented `main` commit; Vercel deployment status is separately rate-limited and does not affect the CI workflow result.
 - No live Razorpay transaction, production deployment, visual browser QA, or load test has been performed.
 
 ## External dependencies
