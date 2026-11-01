@@ -60,9 +60,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       };
 
       if (isTls || (redisUrl && redisUrl.startsWith('rediss://'))) {
-        redisOptions.tls = {
-          rejectUnauthorized: false,
-        };
+        // Node's TLS defaults validate the server certificate. Never disable
+        // certificate verification for production Redis connections.
+        redisOptions.tls = {};
       }
 
       this.client = redisUrl
