@@ -132,6 +132,20 @@ export class RefundService {
       );
 
       return await this.prisma.$transaction(async (tx) => {
+        // Serialize refund completion per order/payment. Multiple refund records
+        // can complete concurrently; without this lock each could miss the
+        // other's uncommitted status and leave a fully-refunded order marked PAID.
+        const lockedPaymentOrder = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT p.id
+          FROM payments p
+          INNER JOIN orders o ON o.id = p.order_id
+          WHERE p.id = ${record.paymentId} AND o.id = ${orderId}
+          FOR UPDATE OF p, o
+        `;
+        if (lockedPaymentOrder.length === 0) {
+          throw new NotFoundException({ error: 'PAYMENT_OR_ORDER_NOT_FOUND' });
+        }
+
         const updated = await tx.refund.updateMany({
           where: {
             id: record.id,
