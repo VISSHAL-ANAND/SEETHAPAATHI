@@ -69,7 +69,7 @@ type Order = {
   shippingAddressSnapshot: Record<string, any>;
 };
 
-const CANCELLABLE_STATUSES = ['PENDING', 'CONFIRMED', 'PENDING_PAYMENT', 'PROCESSING'];
+const CANCELLABLE_STATUSES = ['PENDING_PAYMENT', 'PAYMENT_FAILED'];
 const SHIPPED_STATUSES = ['SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
 export default function OrderTrackingPage() {
