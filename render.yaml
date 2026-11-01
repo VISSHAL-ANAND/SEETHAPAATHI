@@ -117,3 +117,4 @@ databases:
     databaseName: seethapaati
     user: postgres
     region: singapore
+    ipAllowList: []
