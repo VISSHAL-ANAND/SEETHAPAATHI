@@ -103,7 +103,7 @@ services:
   # ---------------------------------------------------------------------------
   - type: keyvalue
     name: seethapaati-redis
-    plan: 1g
+    plan: starter
     region: singapore
     maxmemoryPolicy: noeviction
     persistenceMode: journal-snapshot
