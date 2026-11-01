@@ -185,6 +185,7 @@ export class RefundService {
                     OrderStatus.OUT_FOR_DELIVERY,
                     OrderStatus.DELIVERED,
                     OrderStatus.RETURN_REQUESTED,
+                    OrderStatus.CANCELLED,
                   ],
                 },
               },
