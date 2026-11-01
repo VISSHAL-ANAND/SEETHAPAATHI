@@ -415,28 +415,29 @@ export class WebhookService {
       // 5a. Remove only the quantities purchased from the original cart.
       // Items added or increased while payment was pending remain in the cart.
       if (orderFinalStatus === OrderStatus.PAID && payment.order?.notes) {
+        let cartId: string | undefined;
         try {
           const checkoutNotes = JSON.parse(payment.order.notes);
-          const cartId = checkoutNotes?.cartId;
-          if (typeof cartId === 'string' && cartId.length > 0) {
-            for (const [variantId, purchasedQuantity] of requiredByVariant) {
-              await tx.$executeRaw`
-                UPDATE cart_items
-                SET quantity = GREATEST(0, quantity - ${purchasedQuantity}),
-                    updated_at = NOW()
-                WHERE cart_id = ${cartId}
-                  AND variant_id = ${variantId}
-              `;
-            }
-            await tx.cartItem.deleteMany({
-              where: { cartId, quantity: { lte: 0 } },
-            });
+          if (typeof checkoutNotes?.cartId === 'string' && checkoutNotes.cartId.length > 0) {
+            cartId = checkoutNotes.cartId;
           }
-        } catch (error) {
-          // Cart cleanup must not roll back an authoritative captured payment.
-          this.logger.warn(
-            `Could not reconcile cart for paid order ${payment.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
+        } catch {
+          // Older orders may contain non-JSON notes; leave their cart untouched.
+        }
+
+        if (cartId) {
+          for (const [variantId, purchasedQuantity] of requiredByVariant) {
+            await tx.$executeRaw`
+              UPDATE cart_items
+              SET quantity = GREATEST(0, quantity - ${purchasedQuantity}),
+                  updated_at = NOW()
+              WHERE cart_id = ${cartId}
+                AND variant_id = ${variantId}
+            `;
+          }
+          await tx.cartItem.deleteMany({
+            where: { cartId, quantity: { lte: 0 } },
+          });
         }
       }
 
