@@ -26,6 +26,7 @@ type OrdersResponse = {
 
 const statusLabels: Record<string, { label: string; tone: string }> = {
   PENDING_PAYMENT: { label: 'Payment Pending', tone: 'border-amber-300 bg-amber-50 text-amber-800' },
+  PAYMENT_FAILED: { label: 'Payment Failed', tone: 'border-rose-300 bg-rose-50 text-rose-800' },
   PAID: { label: 'Order Confirmed', tone: 'border-[#B8860B]/40 bg-[#B8860B]/10 text-[#B8860B]' },
   PROCESSING: { label: 'In Preparation', tone: 'border-blue-300 bg-blue-50 text-blue-800' },
   PACKED: { label: 'Packed & Ready', tone: 'border-indigo-300 bg-indigo-50 text-indigo-800' },
@@ -36,7 +37,7 @@ const statusLabels: Record<string, { label: string; tone: string }> = {
   CANCELLED: { label: 'Cancelled', tone: 'border-stone-300 bg-stone-100 text-stone-700' },
 };
 
-const CANCELLABLE_STATUSES = ['PENDING', 'CONFIRMED', 'PENDING_PAYMENT', 'PROCESSING'];
+const CANCELLABLE_STATUSES = ['PENDING_PAYMENT', 'PAYMENT_FAILED'];
 const SHIPPED_STATUSES = ['SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
 export default function OrdersPage() {
