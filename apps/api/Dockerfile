@@ -33,9 +33,6 @@ RUN npx --workspace=@seethapaati/api prisma generate
 # Build NestJS API
 RUN npm --workspace=@seethapaati/api run build
 
-# Remove build/test-only dependencies before copying node_modules to the runner.
-RUN npm prune --omit=dev
-
 # Stage 3: Lean Production Runner
 FROM node:20-alpine AS runner
 WORKDIR /app
