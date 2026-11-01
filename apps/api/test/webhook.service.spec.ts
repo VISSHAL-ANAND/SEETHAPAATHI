@@ -49,6 +49,9 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
       refund: {
         create: jest.fn(),
       },
+      cartItem: {
+        deleteMany: jest.fn(),
+      },
       couponUsage: {
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -198,6 +201,7 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
           id: 'order_db_1',
           status: OrderStatus.PENDING_PAYMENT,
           userId: 'user_1',
+          notes: JSON.stringify({ cartId: 'cart_db_1' }),
           items: [{ variantId: 'v1', quantity: 2 }],
         },
       });
@@ -230,6 +234,9 @@ describe('WebhookService - Authoritative Payment Confirmation & Settlement', () 
           newStatus: OrderStatus.PAID,
           reason: 'PAYMENT_CAPTURED_WEBHOOK',
         }),
+      });
+      expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({
+        where: { cartId: 'cart_db_1', quantity: { lte: 0 } },
       });
     });
 
