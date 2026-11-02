@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 
 export interface EmailMessage { to: string; subject: string; html: string; idempotencyKey: string; }
 
+const EMAIL_REQUEST_TIMEOUT_MS = 10_000;
+
 @Injectable()
 export class EmailProvider {
   constructor(private readonly config: ConfigService) {}
@@ -14,8 +16,20 @@ export class EmailProvider {
       if (nodeEnv === 'production' || nodeEnv === 'staging') throw new ServiceUnavailableException({ error: 'EMAIL_PROVIDER_NOT_CONFIGURED' });
       return `dev-email:${message.idempotencyKey}`;
     }
-    const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': message.idempotencyKey }, body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html }) });
-    if (!response.ok) { const body = await response.text(); throw new Error(`Resend email failed (${response.status}): ${body.slice(0, 1000)}`); }
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': message.idempotencyKey,
+      },
+      body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html }),
+      signal: AbortSignal.timeout(EMAIL_REQUEST_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Resend email failed (${response.status}): ${body.slice(0, 1000)}`);
+    }
     const body = await response.json() as { id?: string };
     if (!body.id) throw new Error('Email provider returned no message id');
     return body.id;
