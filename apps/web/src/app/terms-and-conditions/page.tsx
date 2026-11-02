@@ -100,7 +100,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-serif text-2xl text-[#181513]">5. Pricing, GST Invoicing &amp; Authoritative Orders</h2>
           <p className="mt-2 text-xs leading-relaxed sm:text-sm">
-            All prices are stated in Indian Rupees (₹, INR) and are inclusive of Goods and Services Tax (GST) as required by Indian law. Product listings, descriptions, and pricing are subject to correction without prior notice. While we strive for accuracy, in the event of an inadvertent typographical error or system anomaly displaying an incorrect price or out-of-stock item, we reserve the right to cancel the order and provide an immediate full refund to the original payment source.
+            All prices are stated in Indian Rupees (₹, INR). Applicable GST is calculated from the configured HSN tax rate for each item and is displayed separately in the checkout breakdown. The final checkout total includes the applicable tax and shipping charges. Product listings, descriptions, and pricing are subject to correction without prior notice. While we strive for accuracy, in the event of an inadvertent typographical error or system anomaly displaying an incorrect price or out-of-stock item, we reserve the right to cancel the order and provide an immediate full refund to the original payment source.
           </p>
           <p className="mt-2 text-xs leading-relaxed sm:text-sm">
             Order placement constitutes an offer to purchase; acceptance occurs only when payment verification succeeds and a dispatch confirmation invoice is generated.
