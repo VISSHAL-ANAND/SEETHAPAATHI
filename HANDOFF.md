@@ -133,3 +133,52 @@ Never claim a test, visual check, deployment, or external integration succeeded 
 ## Migration integrity caution
 
 The original empty merchandising migration was briefly populated and then restored to its original empty content. The order/shipping reconciliation migration was also briefly edited to include merchandising and then restored to its first committed content. The final merchandising repair is in a separate new forward-only migration. Before deploying to any database, run `prisma migrate status` and inspect `_prisma_migrations` if that database may have deployed during either brief window. If it recorded a checksum for temporary contents, do not deploy blindly; reconcile the migration history deliberately. The connected Render workspace had no SEETHAPAATHI service, so no Render deployment was observed during this audit.
+
+
+## 2026-11-02 continuation checkpoint — Phase 4/5/6 and CEPt last
+
+### Execution order and guardrails
+- User reconfirmed the order: Phase 4 security/operations → Phase 5 production readiness → Phase 6 test/E2E → Phase 3 India Post CEPt → hosting.
+- All edits are committed directly on `main`; no branch/PR was created in this continuation.
+- No domain was purchased, no DNS was changed, no provider secrets were configured, and no production deploy was triggered.
+
+### Phase 4 implementation in this continuation
+- Removed the Redis TLS certificate-verification bypass from both BullMQ application code and `scripts/test-deployment.js`.
+- Production/staging BullMQ queue absence now raises a service-unavailable error; asynchronous enqueue errors propagate. Development-only null fallback retained.
+- Redis readiness is driven by ioredis `ready`/close/end/error lifecycle, not TCP connect. Rate-limit `INCR` and expiry are atomic via Lua; production auth rate limiting fails closed when Redis is unavailable.
+- Resend request timeout is bounded to 10 seconds. Notification outbox claim batch lowered to five for sequential delivery within the two-minute lease.
+- Email/provider and outbox/worker failure details are redacted from persisted errors/logs. Refund reconciliation logging records error type without provider/customer payloads.
+- Admin upload route enforces a request-body byte cap while streaming, before multipart parsing; keeps server-side session/permission checks and file-signature validation.
+- Added regression tests around Redis, queue, email, notification/invoice/refund workers, outbox lease ownership/retries, and shipping dispatch/state changes.
+- Added `docs/runbooks/operations-monitoring.md`.
+
+### Phase 5 implementation in this continuation
+- Added same-origin Next.js rewrite for browser `/api/v1/*` requests to the configured API service. The web service must be given the correct internal/public API URL for the selected host.
+- Removed the guessed `seethapaati.com` production canonical fallback; production site origin must be configured as HTTPS.
+- Centralized public business/legal/support details in `apps/web/src/lib/business-info.ts`. Production build requires legal entity, FSSAI, registered office, grievance/support contacts and valid phone formats. Business identity/contact values are not invented.
+- Passed these public build values through Dockerfile, Docker Compose, Render Blueprint and CI build/test configuration.
+- Docker Compose web/API/DB/Redis host ports bind to localhost; use a separately configured HTTPS reverse proxy for public access.
+- Corrected storefront copy that disagreed with code: GST is shown as calculated from HSN rates; free shipping begins at ₹500 after discounts and is ₹50 below threshold; India Post tracking is manually entered; no automatic SMS/WhatsApp notifications are claimed; unsupported return/refund and support response guarantees were removed.
+- Added `docs/runbooks/domain-and-hosting-cutover.md` and `docs/runbooks/business-owner-launch-inputs.md`.
+- Business owner/legal/tax review remains mandatory for legal identity, GSTIN, FSSAI licence, registered office, grievance/support details, product/allergen claims and return/refund policy.
+
+### Phase 6 verification evidence
+- GitHub Actions run #237 on commit `edb1c44` succeeded: clean Postgres migrations, API typecheck/lint/tests/build, web typecheck/lint/build, API/web Docker image builds and production Compose validation.
+- This run is not the final verification of later commits. Re-run/confirm full CI against the exact current `main` head before phase sign-off.
+- A live browser E2E test, test-mode Razorpay transactions/refunds, provider-level shipping smoke test, database restore drill and load test were not run; there is no provisioned staging environment/credential access in this task.
+
+### Phase 3 India Post / CEPt public research refresh
+- Official PIB release dated 11 March 2026 says APT 2.0 introduced real-time delivery updates, OTP delivery and API integration with e-commerce partners. This confirms API integration is an active capability, but does not provide a merchant API contract or credentials.
+- Current India Post pages distinguish Speed Post Parcel (Domestic), India Post Parcel (Contractual), and India Post Parcel Last Mile. The 2021 CEPt API v9 and 2021 onboarding SOP remain historical pending confirmation by CEPT of the current APT 2.0 onboarding and contract.
+- Updated `docs/runbooks/india-post-cept-onboarding.md` with these distinctions and new questions for CEPT.
+- No Customer ID/contract eligibility, approved current specification, UAT credentials, production credentials, static egress IP allowlisting or UAT approval were obtained. No live adapter is enabled; API serviceability continues fail-closed.
+
+### Current handoff gates
+1. Confirm successful full CI on the exact latest `main` SHA.
+2. User/business owner supplies verified legal/tax/contact/policy inputs (see `docs/runbooks/business-owner-launch-inputs.md`).
+3. Choose domain and hosting provider; configure same-origin routing, production secrets and durable upload storage.
+4. Complete staging browser/payment/refund/shipping tests, backup restore and load/security review.
+5. Obtain current CEPT/Apt 2.0 merchant documentation/UAT/allowlisting, then implement/certify the India Post adapter.
+6. Only then proceed to domain DNS and production hosting cutover.
+
+Never mark the project fully launch-ready until all external and staging gates above have evidence.
