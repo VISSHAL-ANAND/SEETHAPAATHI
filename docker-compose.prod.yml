@@ -40,6 +40,7 @@ services:
 
   # ---------------------------------------------------------------------------
   # Backend API: NestJS
+  # Host access is loopback-only; expose it through the HTTPS reverse proxy.
   # ---------------------------------------------------------------------------
   api:
     build:
@@ -71,7 +72,7 @@ services:
       SELLER_STATE_CODE: ${SELLER_STATE_CODE:?Set the GST state code matching the GSTIN}
       SELLER_PINCODE: ${SELLER_PINCODE:?Set the registered seller PIN code}
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,6 +81,7 @@ services:
 
   # ---------------------------------------------------------------------------
   # Storefront: Next.js
+  # Host access is loopback-only; expose it through the HTTPS reverse proxy.
   # ---------------------------------------------------------------------------
   web:
     build:
@@ -100,11 +102,11 @@ services:
       INTERNAL_API_URL: http://api:3001/api/v1
       UPLOAD_DIR: /app/apps/web/public/uploads
       UPLOAD_ALLOWED_ORIGINS: ${UPLOAD_ALLOWED_ORIGINS:?Set explicit trusted storefront origins}
-      NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-SEETHAPAATI}
+      NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-SEETHAPAATHI}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set the canonical storefront URL}
       NEXT_PUBLIC_RAZORPAY_KEY_ID: ${NEXT_PUBLIC_RAZORPAY_KEY_ID:?Set NEXT_PUBLIC_RAZORPAY_KEY_ID}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - api
     volumes:
