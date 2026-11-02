@@ -38,7 +38,8 @@ function validatePublicBusinessConfiguration() {
     }
   }
 
-  if (!/^\d{14}$/.test(process.env.NEXT_PUBLIC_FSSAI_LICENSE_NUMBER || '')) {
+  const fssaiNumber = process.env.NEXT_PUBLIC_FSSAI_LICENSE_NUMBER || '';
+  if (!/^\d{14}$/.test(fssaiNumber) || /^0+$/.test(fssaiNumber)) {
     throw new Error('NEXT_PUBLIC_FSSAI_LICENSE_NUMBER must contain the verified 14-digit FSSAI licence/registration number.');
   }
   if (!/^\+91[6-9]\d{9}$/.test(process.env.NEXT_PUBLIC_SUPPORT_PHONE_E164 || '')) {
