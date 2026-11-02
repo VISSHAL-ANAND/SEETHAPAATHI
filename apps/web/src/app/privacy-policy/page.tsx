@@ -99,7 +99,7 @@ export default function PrivacyPage() {
           </p>
           <ul className="mt-2 list-disc list-inside space-y-1.5 text-xs text-[#181513]/75">
             <li>Generating statutory tax invoices complying with Section 31 of the Central Goods and Services Tax Act, 2017.</li>
-            <li>Booking shipment consignments with logistics partners (Bluedart, Delhivery, DTDC, India Post) and dispatching AWB tracking updates.</li>
+            <li>Preparing shipments with the carrier selected for the order and providing the available consignment/tracking information.</li>
             <li>Direct concierge resolution of refund, replacement, or inquiry requests.</li>
             <li>Preventing fraudulent orders, chargebacks, and cyber security incidents.</li>
           </ul>
