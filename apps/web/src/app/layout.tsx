@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '../lib/business-info';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
@@ -138,19 +139,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="border border-[#D7A63B]/60 bg-[#D7A63B]/10 px-2 py-0.5 text-[10px] font-semibold text-[#D7A63B] uppercase tracking-wider">
-                      FSSAI Lic. No. 12426999000142
+                      FSSAI Lic. No. {BUSINESS_INFO.fssaiLicenseNumber}
                     </span>
                     <span className="text-[#F7F5F0]/70">Food Safety &amp; Standards Authority of India Certified</span>
                   </div>
                   <div>
                     <span>Grievance Officer: </span>
-                    <a href="mailto:grievance@seethapaati.com" className="text-[#D7A63B] underline underline-offset-2">
-                      grievance@seethapaati.com
+                    <a href="mailto:{BUSINESS_INFO.grievanceEmail}" className="text-[#D7A63B] underline underline-offset-2">
+                      {BUSINESS_INFO.grievanceEmail}
                     </a>
                   </div>
                 </div>
                 <p>
-                  <strong>Legal Entity:</strong> Seethapaati Heirloom Foods Private Limited (CIN: U10799TN2026PTC158941) • Registered Office: 14/2 South Mada Street, Mylapore, Chennai, Tamil Nadu 600004, India.
+                  <strong>Legal Entity:</strong> {BUSINESS_INFO.legalEntityName}{BUSINESS_INFO.registrationNumber ? ` (${BUSINESS_INFO.registrationLabel}: ${BUSINESS_INFO.registrationNumber})` : ''} • Registered Office: {BUSINESS_INFO.registeredOffice}.
                 </p>
                 <p>
                   <strong>Allergen &amp; Health Disclaimer:</strong> Traditional culinary food staples. Not intended to diagnose, treat, prevent, or cure any disease. Manufactured in a heritage facility that handles sesame, peanuts, mustard, tree nuts, and dairy. Please review ingredient declarations if you have known food sensitivities.
@@ -158,7 +159,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#F7F5F0]/35">
-                <p>© {new Date().getFullYear()} SEETHAPAATI HEIRLOOM FOODS PVT. LTD. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} {BUSINESS_INFO.legalEntityName.toUpperCase()}. All rights reserved.</p>
                 <p>Pure South Indian Culinary Staples • Handcrafted in Chennai, India</p>
               </div>
             </div>
