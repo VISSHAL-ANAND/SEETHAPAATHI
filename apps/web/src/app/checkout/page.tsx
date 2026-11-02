@@ -732,7 +732,7 @@ export default function CheckoutPage() {
                 <span className="text-[#181513]/70">Courier Shipping</span>
                 <span className="tabular-nums font-medium">
                   {cart.pricing.shippingCents === 0 ? (
-                    <span className="text-[#2E7D32] font-semibold">FREE (Above ₹499)</span>
+                    <span className="text-[#2E7D32] font-semibold">FREE (₹500 or more after discounts)</span>
                   ) : (
                     `₹${(cart.pricing.shippingCents / 100).toLocaleString('en-IN')}`
                   )}
