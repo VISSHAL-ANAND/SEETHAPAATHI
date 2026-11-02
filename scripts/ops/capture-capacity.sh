@@ -193,7 +193,7 @@ if [[ "$status" != "OK" || "$OPS_FORCE_ALERT" == "1" ]]; then
     *\"*) echo "OPS_ALERT_WEBHOOK_URL contains an unsupported quote." >&2; exit 2 ;;
   esac
   payload="$(jq -n --arg text "$report" '{text: $text}')"
-  if printf 'url = "%s"\\n' "$OPS_ALERT_WEBHOOK_URL" | curl --config - --silent --show-error --fail --max-time 10 -H 'Content-Type: application/json' --data "$payload" >/dev/null; then
+  if printf 'url = "%s"\n' "$OPS_ALERT_WEBHOOK_URL" | curl --config - --silent --show-error --fail --max-time 10 -H 'Content-Type: application/json' --data "$payload" >/dev/null; then
     :
   else
     echo "Alert delivery failed; webhook response details were suppressed." >&2
