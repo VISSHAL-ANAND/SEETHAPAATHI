@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { RedisService } from './redis.service';
@@ -69,4 +70,28 @@ describe('RedisService readiness and atomic rate-limit counters', () => {
 
     expect(evalMock).toHaveBeenCalledWith(expect.any(String), 1, 'counter', 0);
   });
+  it('fails closed in production when Redis is unavailable for auth rate limiting', async () => {
+    const service = new RedisService(configFor('production'));
+
+    await expect(service.incr('ratelimit:auth:login:127.0.0.1', 60))
+      .rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('fails closed in production when the Redis counter command fails', async () => {
+    const service = new RedisService(configFor('production'));
+    const evalMock = jest.fn().mockRejectedValue(new Error('Redis command failed'));
+    (service as any).client = { eval: evalMock };
+    (service as any).isConnected = true;
+
+    await expect(service.incr('ratelimit:auth:login:127.0.0.1', 60))
+      .rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('uses process-local fallback counters only outside production', async () => {
+    const service = new RedisService(configFor('development'));
+
+    await expect(service.incr('ratelimit:auth:login:127.0.0.1', 60)).resolves.toBe(1);
+    await expect(service.incr('ratelimit:auth:login:127.0.0.1', 60)).resolves.toBe(2);
+  });
+
 });
