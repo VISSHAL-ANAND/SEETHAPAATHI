@@ -9,7 +9,7 @@ const MAX_REQUEST_BYTES = MAX_UPLOAD_BYTES + MAX_MULTIPART_OVERHEAD_BYTES;
 const API_BASE_URL = (
   process.env.INTERNAL_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'https://seethapaati-api.onrender.com'
+  ''
 ).trim().replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 
 class UploadPayloadTooLargeError extends Error {
@@ -100,6 +100,13 @@ export async function POST(req: NextRequest) {
     const cookie = req.headers.get('cookie');
     if (!cookie) {
       return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    }
+
+    if (!API_BASE_URL) {
+      return NextResponse.json(
+        { success: false, error: 'API service is not configured' },
+        { status: 503 },
+      );
     }
 
     const authResponse = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
