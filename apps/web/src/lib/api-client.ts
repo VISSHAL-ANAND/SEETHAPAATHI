@@ -1,9 +1,9 @@
 import type { ApiResponse, ApiErrorResponse } from '@seethapaati/contracts';
 
 export function getApiBaseUrl(): string {
-  // In the browser, always use relative '/api/v1'.
-  // This routes through Next.js reverse proxy rewrites, guaranteeing all cookies are
-  // treated as 100% same-origin first-party cookies (preventing third-party cookie blocking).
+  // In the browser, use relative '/api/v1'. next.config.ts rewrites this path to
+  // the configured API service while keeping the browser request same-origin, so
+  // HttpOnly session cookies remain first-party.
   if (typeof window !== 'undefined') {
     return '/api/v1';
   }
