@@ -141,7 +141,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <span className="border border-[#D7A63B]/60 bg-[#D7A63B]/10 px-2 py-0.5 text-[10px] font-semibold text-[#D7A63B] uppercase tracking-wider">
                       FSSAI Lic. No. {BUSINESS_INFO.fssaiLicenseNumber}
                     </span>
-                    <span className="text-[#F7F5F0]/70">Food Safety &amp; Standards Authority of India Certified</span>
+                    <span className="text-[#F7F5F0]/70">FSSAI licence or registration details</span>
                   </div>
                   <div>
                     <span>Grievance Officer: </span>
@@ -154,13 +154,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <strong>Legal Entity:</strong> {BUSINESS_INFO.legalEntityName}{BUSINESS_INFO.registrationNumber ? ` (${BUSINESS_INFO.registrationLabel}: ${BUSINESS_INFO.registrationNumber})` : ''} • Registered Office: {BUSINESS_INFO.registeredOffice}.
                 </p>
                 <p>
-                  <strong>Allergen &amp; Health Disclaimer:</strong> Traditional culinary food staples. Not intended to diagnose, treat, prevent, or cure any disease. Manufactured in a heritage facility that handles sesame, peanuts, mustard, tree nuts, and dairy. Please review ingredient declarations if you have known food sensitivities.
+                  <strong>Allergen &amp; Health Disclaimer:</strong> Traditional culinary food staples. Not intended to diagnose, treat, prevent, or cure any disease. Please review the ingredient and allergen information shown for each product before ordering. Contact support if you need clarification about an ingredient.
                 </p>
               </div>
 
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#F7F5F0]/35">
                 <p>© {new Date().getFullYear()} {BUSINESS_INFO.legalEntityName.toUpperCase()}. All rights reserved.</p>
-                <p>Pure South Indian Culinary Staples • Handcrafted in Chennai, India</p>
+                <p>South Indian pantry staples</p>
               </div>
             </div>
           </footer>
