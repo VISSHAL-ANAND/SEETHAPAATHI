@@ -69,14 +69,14 @@ export default function ShippingPage() {
             </p>
           </section>
 
-          {/* Section 3: Couriers & Live Tracking */}
+          {/* Section 3: Carrier & Tracking Status */}
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">3. Carrier &amp; Tracking Status</h2>
             <p className="mt-3">
               India Post is the carrier currently supported by the manual dispatch workflow. A live India Post CEPt booking or route-serviceability integration is not enabled. A valid PIN-code format alone does not confirm that the selected service can deliver to a destination.
             </p>
             <p className="mt-2">
-              As soon as your package is scanned at the hub, an automated SMS and WhatsApp update with your live tracking AWB link will be dispatched to your phone. You can also monitor your parcel status directly on our{' '}
+              When staff records an India Post consignment number, your order details show the official tracking link. Tracking events in the store are currently entered manually; automatic carrier synchronization and SMS/WhatsApp tracking notifications are not enabled. View your order details in the{' '}
               <Link href="/tracking" className="font-semibold text-[#A66B18] underline underline-offset-4">
                 Order Tracking
               </Link>.
