@@ -305,8 +305,11 @@ export class RefundService {
           refund.returnId ?? undefined,
           refund.idempotencyKey,
         );
-      } catch {
-        // Leave PENDING. The lease/reconciliation cycle is the recovery mechanism.
+      } catch (error) {
+        // Preserve the pending record and lease recovery path, but make the
+        // failed reconciliation visible without logging gateway/customer data.
+        const errorType = error instanceof Error ? error.name : 'UnknownError';
+        this.logger.warn(`Refund reconciliation deferred for ${refund.id} (${errorType})`);
       }
     }
   }
