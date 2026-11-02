@@ -19,3 +19,5 @@ export const BUSINESS_INFO = {
   supportPhoneE164: process.env.NEXT_PUBLIC_SUPPORT_PHONE_E164 || '',
   whatsappPhone: (process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D/g, ''),
 } as const;
+
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, '');
