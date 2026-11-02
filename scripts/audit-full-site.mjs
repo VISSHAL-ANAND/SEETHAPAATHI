@@ -1,13 +1,28 @@
 #!/usr/bin/env node
 
 /**
- * Seethapaati Production Full-Site Crawler & QA Audit Script
- * Validates zero 404s, broken links, or server errors across all static, dynamic,
- * category, and legacy alias routes.
+ * Seethapaati production full-site crawler and QA audit.
+ * Targets must be supplied explicitly; no provider or deployment is selected here.
  */
 
-const API_BASE = process.env.API_BASE_URL || 'https://seethapaati-api.onrender.com/api/v1';
-const WEB_BASE = process.env.WEB_BASE_URL || 'https://seethapaati-web.onrender.com';
+function requireHttpsUrl(name, raw, originOnly = false) {
+  if (!raw) throw new Error(name + ' must be set explicitly; this audit has no default deployment target.');
+  let url;
+  try { url = new URL(raw); } catch { throw new Error(name + ' must be a valid absolute HTTPS URL.'); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+    throw new Error(name + ' must use HTTPS and must not contain credentials, query parameters or fragments.');
+  }
+  if (originOnly && url.pathname !== '/') {
+    throw new Error(name + ' must be an HTTPS origin without a path.');
+  }
+  return url.toString().replace(/\/+$/, '');
+}
+
+const API_BASE = requireHttpsUrl('API_BASE_URL', process.env.API_BASE_URL);
+const WEB_BASE = requireHttpsUrl('WEB_BASE_URL', process.env.WEB_BASE_URL, true);
+if (!API_BASE.endsWith('/api/v1')) {
+  throw new Error('API_BASE_URL must end in /api/v1.');
+}
 
 async function fetchJson(url) {
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
