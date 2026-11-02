@@ -1,13 +1,13 @@
 # SEETHAPAATHI — Engineering Handover
 
-Last updated: 2026-11-01
+Last updated: 2026-11-03
 
 ## Repository and working branch
 
 - GitHub: https://github.com/VISSHAL-ANAND/SEETHAPAATHI
 - Current working branch: `main`
 - The current repair work was committed directly to `main`; no branches or pull requests were created.
-- Latest known commit when this handover was written: `8edeca7ed096da58e77e4b16c6b179287303c662`. Re-check the branch head before continuing.
+- Latest verified `main` head: `c49c4cc371312913b603142ec3c728e4a3314fbc` (`docs(readme): link release gates and production runbooks`). GitHub Actions run #257 passed on this exact SHA.
 - No repository-level `AGENTS.md`, `docs/STATE.md`, or `docs/TASKS.md` was present during the audit. This handover is the current continuity record.
 
 ## Product and architecture
@@ -182,3 +182,16 @@ The original empty merchandising migration was briefly populated and then restor
 6. Only then proceed to domain DNS and production hosting cutover.
 
 Never mark the project fully launch-ready until all external and staging gates above have evidence.
+
+
+## 2026-11-03 status — current-main CI verified
+
+- Current branch remains `main`; latest verified SHA is `c49c4cc371312913b603142ec3c728e4a3314fbc`.
+- GitHub Actions [run #257](https://github.com/VISSHAL-ANAND/SEETHAPAATHI/actions/runs/41499771409) passed on the exact current SHA.
+- It passed clean PostgreSQL migrations, API typecheck/lint/tests/build, web typecheck/lint/build, both production Docker builds and production Compose validation.
+- API test report: **31 suites passed, 205 tests passed, 0 failures**.
+- Phase 4 repository security/operations changes and regression tests are in place. Actual host/provider monitoring and alert delivery remain pending.
+- Phase 5 deployment templates, same-origin API routing, loopback port bindings, domain/legal disclosure gates and runbooks are in place. Owner legal/business values, domain, host, production secrets and shared storage choice remain pending.
+- Phase 6 automated CI is green on the exact head. Real staging browser E2E, Razorpay test payment/refund runs, shipping dispatch journey, restore drill, load test and final security/business acceptance remain pending.
+- Phase 3 public research and safe fail-closed PIN validation are in place. Live India Post integration remains blocked on current merchant eligibility/contract, Customer ID, APT/CEPT specification, UAT credentials, IP allowlisting and written production approval. No guessed API adapter has been implemented.
+- Hosting remains intentionally unstarted. Do not change DNS, add live credentials, create production services or deploy until the remaining gates are closed.
