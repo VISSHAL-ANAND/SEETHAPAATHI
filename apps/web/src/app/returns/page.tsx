@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '../../lib/business-info';
 import Link from 'next/link';
 import { ShieldAlert, RefreshCw, CheckCircle, ArrowRight, MessageCircle, Mail } from 'lucide-react';
 
@@ -86,17 +87,17 @@ export default function ReturnsPage() {
               <li>
                 Send the media along with your Order Number (e.g. SP-2026-XXXX) via WhatsApp to{' '}
                 <a
-                  href="https://wa.me/919840012345"
+                  href={`https://wa.me/${BUSINESS_INFO.whatsappPhone}`}
                   className="font-semibold text-[#25D366] underline underline-offset-4"
                 >
-                  +91 98400 12345
+                  {BUSINESS_INFO.supportPhoneDisplay}
                 </a>{' '}
                 or email{' '}
                 <a
-                  href="mailto:care@seethapaati.com"
+                  href={`mailto:${BUSINESS_INFO.supportEmail}`}
                   className="font-semibold text-[#A66B18] underline underline-offset-4"
                 >
-                  care@seethapaati.com
+                  {BUSINESS_INFO.supportEmail}
                 </a>.
               </li>
             </ol>
@@ -132,7 +133,7 @@ export default function ReturnsPage() {
             </p>
             <div className="mt-6 space-y-3">
               <a
-                href="https://wa.me/919840012345"
+                href={`https://wa.me/${BUSINESS_INFO.whatsappPhone}`}
                 className="flex h-12 w-full items-center justify-center gap-2 bg-[#181513] text-xs font-semibold uppercase tracking-[0.2em] text-[#F7F5F0] transition hover:bg-[#25D366]"
               >
                 <MessageCircle className="h-4 w-4" /> WhatsApp Helpline
