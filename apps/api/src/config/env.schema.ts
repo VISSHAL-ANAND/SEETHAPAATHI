@@ -120,7 +120,7 @@ export const EnvSchema = z
 
       // Production seller identity/address must be actual registered details.
       // Reject generic template values as well as the former hard-coded sample.
-      const sellerPlaceholderPattern = /placeholder|replace[_\\s-]?with|your_|example|change_me|sample/i;
+      const sellerPlaceholderPattern = /placeholder|replace[_\s-]?with|your_|example|change_me|sample/i;
       const sellerFields: Array<[keyof typeof data, string]> = [
         ['SELLER_LEGAL_NAME', data.SELLER_LEGAL_NAME],
         ['SELLER_TRADE_NAME', data.SELLER_TRADE_NAME],
@@ -136,7 +136,7 @@ export const EnvSchema = z
         data.SELLER_CITY === SELLER_CONFIG_PLACEHOLDERS.city ||
         data.SELLER_PINCODE === SELLER_CONFIG_PLACEHOLDERS.pincode;
       for (const [field, value] of sellerFields) {
-        if (sellerPlaceholderPattern.test(value)) {
+        if (sellerPlaceholderPattern.test(value) || (field === 'SELLER_STATE_CODE' && value === '00') || (field === 'SELLER_PINCODE' && value === '000000')) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: [field],
@@ -180,7 +180,7 @@ export const EnvSchema = z
         });
       }
 
-      if (data.EMAIL_FROM === 'onboarding@resend.dev' || /example\\.(?:com|net|org|test)|replace_with|placeholder/i.test(data.EMAIL_FROM)) {
+      if (data.EMAIL_FROM === 'onboarding@resend.dev' || /example\.(?:com|net|org|test)|replace_with|placeholder/i.test(data.EMAIL_FROM)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['EMAIL_FROM'],
