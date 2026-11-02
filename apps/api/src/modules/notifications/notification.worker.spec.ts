@@ -1,3 +1,8 @@
+jest.mock('@nestjs/schedule', () => ({
+  Cron: () => () => undefined,
+  CronExpression: { EVERY_10_SECONDS: '*/10 * * * * *' },
+}));
+
 import { NotificationWorker } from './notification.worker';
 
 describe('NotificationWorker', () => {
