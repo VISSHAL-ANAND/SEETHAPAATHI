@@ -22,6 +22,13 @@ Set actual values only after the domain and hosting provider are known:
 | `UPLOAD_ALLOWED_ORIGINS` | Exact browser origin(s) allowed to submit admin uploads |
 | `RAZORPAY_WEBHOOK_SECRET` | Secret matching the webhook configured in the Razorpay dashboard |
 | `EMAIL_FROM` | Verified sender address at the transactional email provider |
+| `NEXT_PUBLIC_LEGAL_ENTITY_NAME` | Exact registered legal entity name; must match API `SELLER_LEGAL_NAME` |
+| `NEXT_PUBLIC_BUSINESS_REGISTRATION_LABEL`, `NEXT_PUBLIC_BUSINESS_REGISTRATION_NUMBER` | Optional pair, only when the corresponding verified registration should be disclosed |
+| `NEXT_PUBLIC_FSSAI_LICENSE_NUMBER` | Verified 14-digit FSSAI number for the licensed business/premises |
+| `NEXT_PUBLIC_REGISTERED_OFFICE` | Verified statutory registered-office address; must match invoice/business records where applicable |
+| `NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME` | Actual designated grievance officer |
+| `NEXT_PUBLIC_GRIEVANCE_EMAIL`, `NEXT_PUBLIC_PRIVACY_EMAIL`, `NEXT_PUBLIC_LEGAL_EMAIL`, `NEXT_PUBLIC_SUPPORT_EMAIL` | Monitored and tested public contact mailboxes |
+| `NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY`, `NEXT_PUBLIC_SUPPORT_PHONE_E164`, `NEXT_PUBLIC_WHATSAPP_PHONE` | Verified customer-support/WhatsApp phone numbers in display, +91 E.164, and 91XXXXXXXXXX formats |
 
 `NEXT_PUBLIC_SITE_URL` is a build-time public value in the Next.js application. Changing it requires a new web build/deployment.
 
@@ -62,7 +69,7 @@ Do not switch live traffic until all are true:
 
 - CI passes on the exact deployment commit.
 - Clean database migration deployment succeeds and a tested backup/restore path exists.
-- Production secrets, real seller/GST details, verified email sender and Razorpay live credentials are supplied by the business.
+- Production secrets, real seller/GST details, all public storefront disclosures, verified email sender and Razorpay live credentials are supplied by the business. Public disclosures and API invoice seller settings must match exactly where they describe the same entity/address.
 - Browser `/api/v1/*` requests reach the API and session cookies work on the purchased domain.
 - Upload storage survives redeploy/restart on the actual host.
 - Razorpay test payment, duplicate webhook, failed payment, refund and webhook retry flows pass in staging.
