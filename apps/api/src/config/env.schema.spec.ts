@@ -24,6 +24,7 @@ const validProductionEnvironment = {
 describe('EnvSchema production validation', () => {
   it('accepts fully specified non-placeholder production configuration', () => {
     const result = EnvSchema.safeParse(validProductionEnvironment);
+    if (!result.success) console.error(result.error.format());
     expect(result.success).toBe(true);
   });
 
