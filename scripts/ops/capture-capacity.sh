@@ -163,10 +163,12 @@ Redis: used_memory_bytes=$redis_used_memory, maxmemory_bytes=$redis_max_memory, 
 Upload filesystem usage: $disk_pct"
 
 for item in "${warnings[@]}"; do
-  report+=
+  report="${report}
+WARNING: ${item}"
 done
 for item in "${criticals[@]}"; do
-  report+=
+  report="${report}
+CRITICAL: ${item}"
 done
 if [[ "$OPS_FORCE_ALERT" == "1" ]]; then
   report+=$'\nTEST: forced alert delivery requested.'
