@@ -4,11 +4,51 @@ import { join } from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+const MAX_REQUEST_BYTES = MAX_UPLOAD_BYTES + MAX_MULTIPART_OVERHEAD_BYTES;
 const API_BASE_URL = (
   process.env.INTERNAL_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   'https://seethapaati-api.onrender.com'
 ).trim().replace(/\/+$/, '').replace(/\/api\/v1$/, '');
+
+class UploadPayloadTooLargeError extends Error {
+  constructor() {
+    super('Upload request exceeds the configured size limit');
+    this.name = 'UploadPayloadTooLargeError';
+  }
+}
+
+/**
+ * Enforce the request limit while consuming the stream. Checking Content-Length
+ * alone is insufficient because it may be absent or untrusted.
+ */
+async function readBoundedRequestBody(req: NextRequest, maxBytes: number): Promise<Buffer> {
+  if (!req.body) return Buffer.alloc(0);
+
+  const reader = req.body.getReader();
+  const chunks: Buffer[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new UploadPayloadTooLargeError();
+      }
+
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return Buffer.concat(chunks, totalBytes);
+}
 
 function detectImage(buffer: Buffer): { extension: 'png' | 'jpg' | 'webp'; mime: string } | null {
   if (
@@ -65,6 +105,7 @@ export async function POST(req: NextRequest) {
     const authResponse = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
       headers: { cookie },
       cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!authResponse.ok) {
@@ -77,15 +118,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const contentLength = Number(req.headers.get('content-length') || 0);
-    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_BYTES + 64 * 1024) {
-      return NextResponse.json(
-        { success: false, error: 'Upload request exceeds the 5MB image limit' },
-        { status: 413 },
-      );
+    const declaredLength = req.headers.get('content-length');
+    if (declaredLength) {
+      const contentLength = Number(declaredLength);
+      if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+        return NextResponse.json(
+          { success: false, error: 'Upload request exceeds the 5MB image limit' },
+          { status: 413 },
+        );
+      }
     }
 
-    const formData = await req.formData();
+    // Read with a hard byte cap before multipart parsing to avoid unbounded
+    // request buffering when Content-Length is absent or invalid.
+    const requestBody = await readBoundedRequestBody(req, MAX_REQUEST_BYTES);
+    const boundedRequest = new Request(req.url, {
+      method: 'POST',
+      headers: req.headers,
+      body: new Uint8Array(requestBody),
+    });
+    const formData = await boundedRequest.formData();
     const file = formData.get('file');
 
     if (!(file instanceof File)) {
@@ -119,7 +171,14 @@ export async function POST(req: NextRequest) {
       mimeType: detected.mime,
     });
   } catch (error) {
-    console.error('Failed to upload image:', error);
+    if (error instanceof UploadPayloadTooLargeError) {
+      return NextResponse.json(
+        { success: false, error: 'Upload request exceeds the 5MB image limit' },
+        { status: 413 },
+      );
+    }
+
+    console.error('Failed to upload image:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { success: false, error: 'Upload failed' },
       { status: 500 },
