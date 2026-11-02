@@ -98,14 +98,14 @@ export default function ShippingPage() {
             <PackageCheck className="h-8 w-8 text-[#B8860B]" />
             <h3 className="mt-3 font-serif text-2xl text-[#181513]">Track An Existing Order</h3>
             <p className="mt-2 text-xs leading-relaxed text-[#181513]/70">
-              Need immediate visibility on your dispatch? Enter your order number and phone to view live carrier checkpoint updates.
+              Sign in to your account to view the dispatch and tracking information recorded for your order.
             </p>
             <div className="mt-6">
               <Link
                 href="/tracking"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#181513] text-xs font-semibold uppercase tracking-[0.2em] text-[#F7F5F0] transition hover:bg-[#B8860B]"
               >
-                Track Live Order <ArrowRight className="h-4 w-4" />
+                View Order Details <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function ShippingPage() {
           <div className="border border-[#E3DFD7] bg-white/50 p-6 text-xs text-[#181513]/75 space-y-3">
             <p className="font-semibold uppercase tracking-wider text-[#181513]">Delivery Inquiries</p>
             <p>
-              Experiencing an unexpected transit delay or need an address correction? Contact our concierge team immediately:
+              Experiencing an unexpected transit delay or need an address correction? Contact our support team:
             </p>
             <p className="font-medium text-[#181513]">
               Email: {BUSINESS_INFO.supportEmail}<br />
