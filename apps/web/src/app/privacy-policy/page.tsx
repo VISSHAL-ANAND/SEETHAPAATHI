@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '../../lib/business-info';
 import Link from 'next/link';
 import { ShieldCheck, Lock, FileText, Database } from 'lucide-react';
 
@@ -19,7 +20,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="mt-4 text-xs font-medium text-[#181513]/70 leading-relaxed sm:text-sm">
-          <strong>Data Fiduciary:</strong> Seethapaati Heirloom Foods Private Limited (CIN: U10799TN2026PTC158941)<br />
+          <strong>Data Fiduciary:</strong> {BUSINESS_INFO.legalEntityName}{BUSINESS_INFO.registrationNumber ? ` (${BUSINESS_INFO.registrationLabel}: ${BUSINESS_INFO.registrationNumber})` : ''}<br />
           <strong>Statutory Compliance:</strong> Digital Personal Data Protection Act, 2023 (DPDP Act) &amp; Information Technology Act, 2000.<br />
           <strong>Effective Date:</strong> January 1, 2026 • Last Updated: October 2026.
         </p>
@@ -32,7 +33,7 @@ export default function PrivacyPage() {
           <span>Zero-Brokerage Data Integrity Standard</span>
         </div>
         <p className="mt-2 text-[#181513]/80">
-          SEETHAPAATI HEIRLOOM FOODS PVT. LTD. NEVER SELLS, LEASES, MONETIZES, OR DISTRIBUTES YOUR PERSONAL DATA TO THIRD-PARTY ADVERTISERS OR MARKETING BROKERS. DATA IS COLLECTED EXCLUSIVELY FOR FULFILLING YOUR ORDERS, COMPLYING WITH INDIAN TAX LAWS (GST), AND PROVIDING DIRECT CUSTOMER CARE.
+          {BUSINESS_INFO.legalEntityName.toUpperCase()} NEVER SELLS, LEASES, MONETIZES, OR DISTRIBUTES YOUR PERSONAL DATA TO THIRD-PARTY ADVERTISERS OR MARKETING BROKERS. DATA IS COLLECTED EXCLUSIVELY FOR FULFILLING YOUR ORDERS, COMPLYING WITH INDIAN TAX LAWS (GST), AND PROVIDING DIRECT CUSTOMER CARE.
         </p>
       </div>
 
@@ -138,19 +139,19 @@ export default function PrivacyPage() {
             <li><strong>Right to Nominate:</strong> Nominate an individual to exercise rights on your behalf in the event of death or incapacity.</li>
           </ul>
           <p className="mt-3 text-xs">
-            To exercise any of these rights, email our Data Protection Officer at <code>privacy@seethapaati.com</code>. Requests are acknowledged within 48 hours and processed within thirty (30) days.
+            To exercise any of these rights, email our Data Protection Officer at <code>{BUSINESS_INFO.privacyEmail}</code>. Requests are acknowledged within 48 hours and processed within thirty (30) days.
           </p>
         </section>
 
         <section className="border-t border-[#E3DFD7] pt-8">
           <h2 className="font-serif text-2xl text-[#181513]">8. Designated Grievance &amp; Data Protection Officer</h2>
           <div className="mt-4 border border-[#E3DFD7] bg-white/70 p-5 text-xs text-[#181513]">
-            <p><strong>Nodal Officer:</strong> Visshal Anand, Operations &amp; Data Governance</p>
-            <p className="mt-1"><strong>Entity:</strong> Seethapaati Heirloom Foods Private Limited</p>
-            <p className="mt-1"><strong>Corporate Identification Number (CIN):</strong> U10799TN2026PTC158941</p>
-            <p className="mt-1"><strong>Registered Office:</strong> 14/2 South Mada Street, Mylapore, Chennai, Tamil Nadu 600004, India</p>
-            <p className="mt-1"><strong>Email:</strong> privacy@seethapaati.com / grievance@seethapaati.com</p>
-            <p className="mt-1"><strong>Helpline:</strong> +91 (044) 2498 1947 / +91 98400 12345</p>
+            <p><strong>Nodal Officer:</strong> {BUSINESS_INFO.grievanceOfficerName}</p>
+            <p className="mt-1"><strong>Entity:</strong> {BUSINESS_INFO.legalEntityName}</p>
+            {BUSINESS_INFO.registrationNumber ? <p className="mt-1"><strong>{BUSINESS_INFO.registrationLabel}:</strong> {BUSINESS_INFO.registrationNumber}</p> : null}
+            <p className="mt-1"><strong>Registered Office:</strong> {BUSINESS_INFO.registeredOffice}</p>
+            <p className="mt-1"><strong>Email:</strong> {BUSINESS_INFO.privacyEmail} / {BUSINESS_INFO.grievanceEmail}</p>
+            <p className="mt-1"><strong>Helpline:</strong> {BUSINESS_INFO.supportPhoneDisplay}</p>
           </div>
         </section>
       </div>
