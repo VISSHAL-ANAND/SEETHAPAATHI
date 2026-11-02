@@ -8,7 +8,11 @@ import { CartDrawer } from '../components/storefront/CartDrawer';
 import { MobileBottomNav } from '../components/storefront/MobileBottomNav';
 
 const STORE_NAME = process.env.NEXT_PUBLIC_STORE_NAME || 'SEETHAPAATI';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://seethapaati.com';
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+if (process.env.NODE_ENV === 'production' && !configuredSiteUrl) {
+  throw new Error('NEXT_PUBLIC_SITE_URL must be set to the purchased canonical HTTPS domain before a production build.');
+}
+const SITE_URL = (configuredSiteUrl || 'http://localhost:3000').replace(/\\/+$/, '');
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
