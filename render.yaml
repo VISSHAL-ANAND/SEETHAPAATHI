@@ -96,6 +96,32 @@ services:
         sync: false
       - key: NEXT_PUBLIC_RAZORPAY_KEY_ID
         sync: false
+      - key: NEXT_PUBLIC_LEGAL_ENTITY_NAME
+        sync: false
+      - key: NEXT_PUBLIC_BUSINESS_REGISTRATION_LABEL
+        sync: false
+      - key: NEXT_PUBLIC_BUSINESS_REGISTRATION_NUMBER
+        sync: false
+      - key: NEXT_PUBLIC_FSSAI_LICENSE_NUMBER
+        sync: false
+      - key: NEXT_PUBLIC_REGISTERED_OFFICE
+        sync: false
+      - key: NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME
+        sync: false
+      - key: NEXT_PUBLIC_GRIEVANCE_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_PRIVACY_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_LEGAL_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_EMAIL
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_PHONE_DISPLAY
+        sync: false
+      - key: NEXT_PUBLIC_SUPPORT_PHONE_E164
+        sync: false
+      - key: NEXT_PUBLIC_WHATSAPP_PHONE
+        sync: false
       - key: UPLOAD_DIR
         value: /opt/render/project/src/apps/web/public/uploads
       - key: UPLOAD_ALLOWED_ORIGINS
