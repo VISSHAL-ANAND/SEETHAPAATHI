@@ -1,5 +1,6 @@
-import { BUSINESS_INFO } from '../../lib/business-info';
 'use client';
+
+import { BUSINESS_INFO } from '../../lib/business-info';
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
