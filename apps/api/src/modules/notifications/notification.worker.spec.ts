@@ -1,9 +1,9 @@
-jest.mock('@nestjs/schedule', () => ({
+jest.doMock('@nestjs/schedule', () => ({
   Cron: () => () => undefined,
   CronExpression: { EVERY_10_SECONDS: '*/10 * * * * *' },
 }));
 
-import { NotificationWorker } from './notification.worker';
+const { NotificationWorker } = require('./notification.worker') as typeof import('./notification.worker');
 
 describe('NotificationWorker', () => {
   let outbox: { claimBatch: jest.Mock; complete: jest.Mock; fail: jest.Mock };
