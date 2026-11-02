@@ -1,8 +1,9 @@
+import { BUSINESS_INFO } from '../../lib/business-info';
 'use client';
 
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, MessageCircle, Clock, CheckCircle2, Send, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageCircle, Clock, Send, ArrowRight } from 'lucide-react';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -13,15 +14,26 @@ export default function ContactPage() {
     subject: 'Order Inquiry',
     message: '',
   });
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'submitted'>('idle');
+  const [status, setStatus] = useState<'idle' | 'prepared'>('idle');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setStatus('submitting');
-    // Simulated smooth submission with guaranteed UX reassurance
-    setTimeout(() => {
-      setStatus('submitted');
-    }, 600);
+    const subject = formData.orderNumber
+      ? `${formData.subject} — ${formData.orderNumber}`
+      : formData.subject;
+    const body = [
+      `Name: ${formData.name}`,
+      `Email: ${formData.email}`,
+      `Phone: ${formData.phone || 'Not provided'}`,
+      `Order number: ${formData.orderNumber || 'Not applicable'}`,
+      '',
+      formData.message,
+    ].join('\n');
+
+    // The site does not claim to send or store the message. It prepares a
+    // draft in the visitor's configured email application instead.
+    window.location.href = `mailto:${BUSINESS_INFO.supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setStatus('prepared');
   };
 
   return (
@@ -46,7 +58,7 @@ export default function ContactPage() {
           {/* Quick Channels */}
           <div className="grid gap-4 sm:grid-cols-2">
             <a
-              href="https://wa.me/919840012345?text=Vanakkam%20Seethapaati%20team%2C%20I%20have%20an%20inquiry%20regarding%20my%20order."
+              href={`https://wa.me/${BUSINESS_INFO.whatsappPhone}?text=Vanakkam%20Seethapaati%20team%2C%20I%20have%20an%20inquiry%20regarding%20my%20order.`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-start gap-4 border border-[#E3DFD7] bg-white/60 p-5 transition hover:border-[#25D366] hover:bg-white"
@@ -56,13 +68,13 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">WhatsApp Care</p>
-                <p className="mt-0.5 text-sm font-medium text-[#181513]">+91 98400 12345</p>
+                <p className="mt-0.5 text-sm font-medium text-[#181513]">{BUSINESS_INFO.supportPhoneDisplay}</p>
                 <p className="mt-1 text-[11px] text-[#181513]/60">Instant response during business hours</p>
               </div>
             </a>
 
             <a
-              href="mailto:seethapatticare@gmail.com"
+              href={`mailto:${BUSINESS_INFO.supportEmail}`}
               className="flex items-start gap-4 border border-[#E3DFD7] bg-white/60 p-5 transition hover:border-[#B8860B] hover:bg-white"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#B8860B]/10 text-[#B8860B]">
@@ -70,7 +82,7 @@ export default function ContactPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Email Concierge</p>
-                <p className="mt-0.5 text-sm font-medium text-[#181513]">seethapatticare@gmail.com</p>
+                <p className="mt-0.5 text-sm font-medium text-[#181513]">{BUSINESS_INFO.supportEmail}</p>
                 <p className="mt-1 text-[11px] text-[#181513]/60">Replies within 12 business hours</p>
               </div>
             </a>
@@ -109,7 +121,7 @@ export default function ContactPage() {
               <div className="border-b border-[#E3DFD7]/60 pb-3">
                 <p className="font-semibold text-[#181513]">When will my order ship?</p>
                 <p className="mt-1">
-                  Every batch is freshly ground or packed within 24 to 48 hours from our Mylapore kitchen. Express couriers (Bluedart/Delhivery) deliver across metro cities in 2–3 business days and rest of India in 3–5 business days.
+                  Every batch is freshly ground or packed within 24 to 48 hours from our Mylapore kitchen. Dispatch and delivery timelines depend on the destination and the carrier service available for the order. We share tracking details after dispatch.
                 </p>
               </div>
               <div className="border-b border-[#E3DFD7]/60 pb-3">
@@ -140,12 +152,12 @@ export default function ContactPage() {
             How may we assist you?
           </h2>
 
-          {status === 'submitted' ? (
+          {status === 'prepared' ? (
             <div className="mt-8 space-y-4 border border-[#2E7D32]/30 bg-[#2E7D32]/5 p-6 text-center">
-              <CheckCircle2 className="mx-auto h-10 w-10 text-[#2E7D32]" />
-              <h3 className="font-serif text-2xl text-[#181513]">Thank you for reaching out</h3>
+              <Mail className="mx-auto h-10 w-10 text-[#2E7D32]" />
+              <h3 className="font-serif text-2xl text-[#181513]">Your email draft is ready</h3>
               <p className="text-xs leading-relaxed text-[#181513]/70">
-                Your message has been received by our kitchen concierge. A member of our team will respond to {formData.email || 'your email'} shortly.
+                Your email application should open with the message addressed to {BUSINESS_INFO.supportEmail}. The website does not send or store this message. If no email application opened, send your message directly to {BUSINESS_INFO.supportEmail}.
               </p>
               <button
                 type="button"
@@ -257,11 +269,11 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                disabled={status === 'submitting'}
+                disabled={false}
                 className="mt-4 flex w-full h-12 items-center justify-center gap-2 bg-[#181513] text-xs font-semibold uppercase tracking-[0.2em] text-[#F7F5F0] transition hover:bg-[#B8860B] disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" />
-                {status === 'submitting' ? 'Submitting Message…' : 'Send Message'}
+                Send Email Draft
               </button>
             </form>
           )}
