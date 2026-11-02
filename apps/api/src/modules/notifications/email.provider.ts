@@ -27,8 +27,9 @@ export class EmailProvider {
       signal: AbortSignal.timeout(EMAIL_REQUEST_TIMEOUT_MS),
     });
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Resend email failed (${response.status}): ${body.slice(0, 1000)}`);
+      // Provider response bodies can include recipient addresses or request
+      // details. Keep them out of application logs and persisted outbox errors.
+      throw new Error(`Resend email request failed with HTTP ${response.status}`);
     }
     const body = await response.json() as { id?: string };
     if (!body.id) throw new Error('Email provider returned no message id');
