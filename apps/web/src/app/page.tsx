@@ -1,3 +1,4 @@
+import { SITE_URL } from '../lib/business-info';
 import type { Metadata } from 'next';
 import type { ProductDto } from '@seethapaati/contracts';
 import { HomeClient } from '../components/storefront/HomeClient';
@@ -13,11 +14,11 @@ export const metadata: Metadata = {
     title: 'Seethapaati — Heirloom South Indian Staples & Handcrafted Masalas',
     description:
       'Purveyors of heirloom South Indian culinary staples, heritage masalas, cold-stone ground spice blends, and botanical malts.',
-    url: 'https://seethapaati.com',
+    url: SITE_URL,
     siteName: 'Seethapaati',
     images: [
       {
-        url: 'https://seethapaati.com/images/masala.jpg',
+        url: `${SITE_URL}/images/masala.jpg`,
         width: 1200,
         height: 630,
         alt: 'Seethapaati Artisanal Pantry',
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
     title: 'Seethapaati — Heirloom South Indian Staples',
     description:
       'Purveyors of heirloom South Indian culinary staples, heritage masalas, cold-stone ground spice blends, and botanical malts.',
-    images: ['https://seethapaati.com/images/masala.jpg'],
+    images: [`${SITE_URL}/images/masala.jpg`],
   },
 };
 
@@ -61,10 +62,10 @@ export default async function HomePage() {
     '@graph': [
       {
         '@type': 'Organization',
-        '@id': 'https://seethapaati.com/#organization',
+        '@id': `${SITE_URL}/#organization`,
         name: 'Seethapaati',
-        url: 'https://seethapaati.com',
-        logo: 'https://seethapaati.com/images/logo.png',
+        url: SITE_URL,
+        logo: `${SITE_URL}/images/logo.png`,
         description:
           'Purveyors of heirloom South Indian culinary staples, heritage masalas, cold-stone ground spice blends, and botanical malts.',
         sameAs: [
@@ -74,15 +75,15 @@ export default async function HomePage() {
       },
       {
         '@type': 'WebSite',
-        '@id': 'https://seethapaati.com/#website',
-        url: 'https://seethapaati.com',
+        '@id': `${SITE_URL}/#website`,
+        url: SITE_URL,
         name: 'Seethapaati',
         publisher: {
-          '@id': 'https://seethapaati.com/#organization',
+          '@id': `${SITE_URL}/#organization`,
         },
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://seethapaati.com/shop?q={search_term_string}',
+          target: `${SITE_URL}/shop?q={search_term_string}`,
           'query-input': 'required name=search_term_string',
         },
       },
