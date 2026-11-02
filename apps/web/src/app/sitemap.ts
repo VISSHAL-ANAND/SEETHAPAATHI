@@ -2,7 +2,11 @@ import { MetadataRoute } from 'next';
 
 export const dynamic = 'force-dynamic';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://seethapaati.com').replace(/\/+$/, '');
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+if (process.env.NODE_ENV === 'production' && !configuredSiteUrl) {
+  throw new Error('NEXT_PUBLIC_SITE_URL must be set before generating the production sitemap.');
+}
+const SITE_URL = (configuredSiteUrl || 'http://localhost:3000').replace(/\/+$/, '');
 const PAGE_SIZE = 100;
 const MAX_PRODUCT_PAGES = 100;
 
