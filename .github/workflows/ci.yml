@@ -29,8 +29,10 @@ jobs:
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
-      - name: Validate operations capacity script syntax
-        run: bash -n scripts/ops/capture-capacity.sh
+      - name: Validate and test operations capacity tooling
+        run: |
+          bash -n scripts/ops/capture-capacity.sh
+          bash scripts/ops/test-capture-capacity.sh
       - uses: actions/setup-node@v4
         with:
           node-version: 22
