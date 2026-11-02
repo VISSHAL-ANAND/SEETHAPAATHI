@@ -39,9 +39,8 @@ export class NotificationWorker implements OnModuleDestroy {
         }
       }
     } catch (error) {
-      this.logger.error(
-        `Notification polling failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      const errorType = error instanceof Error ? error.name : 'UnknownError';
+      this.logger.error(`Notification polling failed (${errorType})`);
     } finally {
       this.running = false;
     }
