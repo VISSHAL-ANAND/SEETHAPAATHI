@@ -36,8 +36,8 @@ cat > "$mock_bin/curl" <<'MOCK'
 #!/usr/bin/env bash
 config="$(cat)"
 {
-  printf 'ARGS:%s\n' "$*"
-  printf 'CONFIG:%s\n' "$config"
+  printf 'ARGS:%s\\n' "$*"
+  printf 'CONFIG:%s\\n' "$config"
 } >> "$MOCK_CURL_LOG"
 if [[ "$*" == *"alerts.example.test"* ]]; then
   echo "Webhook URL leaked into curl arguments." >&2

@@ -88,15 +88,13 @@ jobs:
             https://*) ;;
             *) echo "Monitoring webhook must use HTTPS." >&2; exit 1 ;;
           esac
-          if [[ "$MONITORING_ALERT_WEBHOOK_URL" == *'"* || "$MONITORING_ALERT_WEBHOOK_URL" == *$'\n'* || "$MONITORING_ALERT_WEBHOOK_URL" == *$'\r'* || "$MONITORING_ALERT_WEBHOOK_URL" == *\\* ]]; then
-            echo "Monitoring webhook contains unsupported characters." >&2
-            exit 1
-          fi
+          case "$MONITORING_ALERT_WEBHOOK_URL" in
+            *\"*) echo "Monitoring webhook contains an unsupported quote." >&2; exit 1 ;;
+          esac
           payload="$(node -e 'process.stdout.write(JSON.stringify({text: process.argv[1]}))' "$message")"
-          if ! printf 'url = "%s"\n' "$MONITORING_ALERT_WEBHOOK_URL" |
-            curl --config - --silent --show-error --fail --max-time 10 \
-              -H 'Content-Type: application/json' \
-              --data "$payload" >/dev/null; then
+          if printf 'url = "%s"\\n' "$MONITORING_ALERT_WEBHOOK_URL" | curl --config - --silent --show-error --fail --max-time 10 -H 'Content-Type: application/json' --data "$payload" >/dev/null; then
+            :
+          else
             echo "Operations alert delivery failed; webhook response details were suppressed." >&2
             exit 1
           fi

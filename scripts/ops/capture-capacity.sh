@@ -189,15 +189,13 @@ if [[ "$status" != "OK" || "$OPS_FORCE_ALERT" == "1" ]]; then
     https://*) ;;
     *) echo "OPS_ALERT_WEBHOOK_URL must use HTTPS." >&2; exit 2 ;;
   esac
-  if [[ "$OPS_ALERT_WEBHOOK_URL" == *'"* || "$OPS_ALERT_WEBHOOK_URL" == *$'\n'* || "$OPS_ALERT_WEBHOOK_URL" == *$'\r'* || "$OPS_ALERT_WEBHOOK_URL" == *\\* ]]; then
-    echo "OPS_ALERT_WEBHOOK_URL contains unsupported characters." >&2
-    exit 2
-  fi
+  case "$OPS_ALERT_WEBHOOK_URL" in
+    *\"*) echo "OPS_ALERT_WEBHOOK_URL contains an unsupported quote." >&2; exit 2 ;;
+  esac
   payload="$(jq -n --arg text "$report" '{text: $text}')"
-  if ! printf 'url = "%s"\n' "$OPS_ALERT_WEBHOOK_URL" |
-    curl --config - --silent --show-error --fail --max-time 10 \
-      -H 'Content-Type: application/json' \
-      --data "$payload" >/dev/null; then
+  if printf 'url = "%s"\\n' "$OPS_ALERT_WEBHOOK_URL" | curl --config - --silent --show-error --fail --max-time 10 -H 'Content-Type: application/json' --data "$payload" >/dev/null; then
+    :
+  else
     echo "Alert delivery failed; webhook response details were suppressed." >&2
     exit 2
   fi
