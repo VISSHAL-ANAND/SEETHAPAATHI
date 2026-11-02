@@ -17,7 +17,7 @@ function validatePublicBusinessConfiguration() {
     'NEXT_PUBLIC_WHATSAPP_PHONE',
   ] as const;
 
-  const placeholder = /replace[_\\s-]?with|placeholder|example\\.(?:com|net|org|test|invalid)|demo[ _-]/i;
+  const placeholder = /replace[_\s-]?with|placeholder|example\.(?:com|net|org|test|invalid)|demo[ _-]/i;
   const missing = required.filter((key) => {
     const value = process.env[key]?.trim();
     return !value || placeholder.test(value);
@@ -33,18 +33,18 @@ function validatePublicBusinessConfiguration() {
     'NEXT_PUBLIC_SUPPORT_EMAIL',
   ] as const;
   for (const key of emailKeys) {
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(process.env[key] || '')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env[key] || '')) {
       throw new Error(`${key} must be a valid public business contact email address.`);
     }
   }
 
-  if (!/^\\d{14}$/.test(process.env.NEXT_PUBLIC_FSSAI_LICENSE_NUMBER || '')) {
+  if (!/^\d{14}$/.test(process.env.NEXT_PUBLIC_FSSAI_LICENSE_NUMBER || '')) {
     throw new Error('NEXT_PUBLIC_FSSAI_LICENSE_NUMBER must contain the verified 14-digit FSSAI licence/registration number.');
   }
-  if (!/^\\+91[6-9]\\d{9}$/.test(process.env.NEXT_PUBLIC_SUPPORT_PHONE_E164 || '')) {
+  if (!/^\+91[6-9]\d{9}$/.test(process.env.NEXT_PUBLIC_SUPPORT_PHONE_E164 || '')) {
     throw new Error('NEXT_PUBLIC_SUPPORT_PHONE_E164 must be the verified Indian support phone in +91XXXXXXXXXX format.');
   }
-  if (!/^91[6-9]\\d{9}$/.test((process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\\D/g, ''))) {
+  if (!/^91[6-9]\d{9}$/.test((process.env.NEXT_PUBLIC_WHATSAPP_PHONE || '').replace(/\D/g, ''))) {
     throw new Error('NEXT_PUBLIC_WHATSAPP_PHONE must be the verified WhatsApp number in 91XXXXXXXXXX format.');
   }
 
@@ -78,7 +78,7 @@ function getApiRewriteDestination(): string | null {
     throw new Error('The configured API URL must use HTTP(S) and must not contain credentials, query parameters, or a fragment.');
   }
 
-  let apiPath = apiUrl.pathname.replace(/\\/+$/, '');
+  let apiPath = apiUrl.pathname.replace(/\/+$/, '');
   if (!apiPath.endsWith('/api/v1')) {
     apiPath = `${apiPath}/api/v1`;
   }
