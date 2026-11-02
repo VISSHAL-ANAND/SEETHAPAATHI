@@ -5,7 +5,7 @@ import { Truck, ShieldCheck, Clock, MapPin, PackageCheck, ArrowRight } from 'luc
 export const metadata = {
   title: 'Shipping & Delivery Policy | Seethapaati',
   description:
-    'Shipping charges, dispatch information and tracking availability for Seethapaati orders. Carrier serviceability and delivery estimates are confirmed separately.',
+    'Shipping charges, dispatch information and current carrier tracking capabilities for Seethapaati orders.',
 };
 
 export default function ShippingPage() {
@@ -85,7 +85,7 @@ export default function ShippingPage() {
 
           {/* Section 4: Protective Packaging */}
           <section>
-            <h2 className="font-serif text-2xl text-[#181513]">4. Transit-Grade Packaging Guarantee</h2>
+            <h2 className="font-serif text-2xl text-[#181513]">4. Preparing Orders for Transit</h2>
             <p className="mt-3">
               We take care when preparing orders for transit. If an order arrives damaged or an item is missing, contact support with your order number and clear photos so the team can review the issue under the published returns policy.
             </p>
