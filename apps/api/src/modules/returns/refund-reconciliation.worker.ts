@@ -17,7 +17,8 @@ export class RefundReconciliationWorker implements OnModuleDestroy {
     try {
       await this.refunds.reconcilePending(20);
     } catch (error) {
-      this.logger.error('Refund reconciliation failed: ' + (error instanceof Error ? error.message : String(error)));
+      const errorType = error instanceof Error ? error.name : 'UnknownError';
+      this.logger.error(`Refund reconciliation polling failed (${errorType})`);
     } finally {
       this.running = false;
     }
