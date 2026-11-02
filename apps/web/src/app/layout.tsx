@@ -12,7 +12,7 @@ const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
 if (process.env.NODE_ENV === 'production' && !configuredSiteUrl) {
   throw new Error('NEXT_PUBLIC_SITE_URL must be set to the purchased canonical HTTPS domain before a production build.');
 }
-const SITE_URL = (configuredSiteUrl || 'http://localhost:3000').replace(/\\/+$/, '');
+const SITE_URL = (configuredSiteUrl || 'http://localhost:3000').replace(/\/+$/, '');
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
