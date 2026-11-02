@@ -145,7 +145,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </div>
                   <div>
                     <span>Grievance Officer: </span>
-                    <a href="mailto:{BUSINESS_INFO.grievanceEmail}" className="text-[#D7A63B] underline underline-offset-2">
+                    <a href={`mailto:${BUSINESS_INFO.grievanceEmail}`} className="text-[#D7A63B] underline underline-offset-2">
                       {BUSINESS_INFO.grievanceEmail}
                     </a>
                   </div>
