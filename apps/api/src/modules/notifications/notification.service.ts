@@ -36,8 +36,11 @@ export class NotificationService {
       const providerId = await this.email.send({ to: data.email, subject: data.subject, html: data.html, idempotencyKey: `notification:${event.id}` });
       await this.prisma.notification.update({ where: { id: attempt.id }, data: { status: NotificationStatus.SENT, providerMessageId: providerId, sentAt: new Date(), lastError: null } });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await this.prisma.notification.update({ where: { id: attempt.id }, data: { status: NotificationStatus.FAILED, lastError: message.slice(0, 2000) } });
+      const errorType = error instanceof Error ? error.name : 'UnknownError';
+      await this.prisma.notification.update({
+        where: { id: attempt.id },
+        data: { status: NotificationStatus.FAILED, lastError: `${errorType}: delivery failed` },
+      });
       throw error;
     }
   }
