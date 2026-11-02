@@ -8,7 +8,7 @@ const { NotificationWorker } = require('./notification.worker') as typeof import
 describe('NotificationWorker', () => {
   let outbox: { claimBatch: jest.Mock; complete: jest.Mock; fail: jest.Mock };
   let notifications: { processEvent: jest.Mock };
-  let worker: NotificationWorker;
+  let worker: InstanceType<typeof NotificationWorker>;
 
   beforeEach(() => {
     outbox = {
