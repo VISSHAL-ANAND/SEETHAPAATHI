@@ -49,7 +49,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
       ? {
           url: redisUrl,
           maxRetriesPerRequest: null,
-          ...(isTls || redisUrl.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {}),
+          ...(isTls || redisUrl.startsWith('rediss://') ? { tls: {} } : {}),
         }
       : {
           host,
