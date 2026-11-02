@@ -113,7 +113,8 @@ export class OutboxService {
   }
 
   async fail(id: string, error: unknown, leasedBy: string) {
-    const message = error instanceof Error ? error.message : String(error);
+    const errorType = error instanceof Error ? error.name : 'UnknownError';
+    const safeError = `${errorType}: event processing failed`;
     const current = await this.prisma.outboxEvent.findFirst({ where: { id, status: OutboxStatus.PROCESSING, leasedBy } });
     if (!current) return false;
     const retryCount = current.retryCount + 1;
@@ -127,11 +128,11 @@ export class OutboxService {
         nextRetryAt: terminal ? null : new Date(Date.now() + backoffSeconds * 1000),
         leasedUntil: null,
         leasedBy: null,
-        lastError: message.slice(0, 2000),
+        lastError: safeError,
       },
     });
     if (updated.count !== 1) return false;
-    this.logger.error(`Outbox event ${id} failed (attempt ${retryCount}): ${message}`);
+    this.logger.error(`Outbox event ${id} failed (attempt ${retryCount}, ${errorType})`);
     return true;
   }
 }
