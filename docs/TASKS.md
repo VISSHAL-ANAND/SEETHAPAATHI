@@ -38,7 +38,7 @@
 - [x] Add regression tests for refund-reconciliation and invoice worker lifecycle.
 - [x] Add regression tests for shipment dispatch eligibility, duplicate creation and tracking transitions.
 - [x] Confirm full CI run #237 on commit `edb1c44`: clean migrations, API typecheck/lint/tests/build, web typecheck/lint/build, API/web Docker builds and production Compose validation passed.
-- [ ] Obtain a successful full CI run for the exact current `main` head after all later code and policy changes.
+- [x] Obtain a successful full CI run for the exact current `main` head: run #257 on `c49c4cc371312913b603142ec3c728e4a3314fbc`; 31 API test suites and 205 tests passed, plus API/web typecheck/lint/build, clean migrations, both Docker image builds and production Compose validation.
 - [ ] Run browser E2E on a real staging origin: sign-in/session, catalog, cart, checkout, admin upload, order history and tracking.
 - [ ] Run Razorpay test-mode success/failure/duplicate webhook/stockout/refund/partial and full refund scenarios.
 - [ ] Run the staging shipping/dispatch/manual tracking journey and confirm notification behavior.
@@ -78,3 +78,12 @@
 - [ ] Verify active product SEO metadata/structured data and image rights with business owner.
 - [ ] Review product nutrition, allergen, FSSAI and origin claims with actual evidence.
 - [ ] Consider image re-encoding/malware scanning after selecting the storage pipeline.
+
+
+## Latest CI evidence — 2026-11-03
+
+- Current `main` head at verification: `c49c4cc371312913b603142ec3c728e4a3314fbc`.
+- GitHub Actions run [#257](https://github.com/VISSHAL-ANAND/SEETHAPAATHI/actions/runs/41499771409): success on the exact head.
+- API tests: 31 suites passed, 205 tests passed, 0 failed.
+- API/web typecheck and lint, API/web builds, clean PostgreSQL migrations, API/web production Docker builds and Compose validation all passed.
+- This is automated CI evidence only; it is not staging E2E or production acceptance.
