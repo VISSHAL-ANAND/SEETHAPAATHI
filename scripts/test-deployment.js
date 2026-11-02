@@ -10,7 +10,7 @@
  *
  * Usage:
  *   node scripts/test-deployment.js
- *   node scripts/test-deployment.js --api https://api.seethapaati.com/api/v1/health
+ *   node scripts/test-deployment.js --api https://api.example.com/api/v1/health
  *   node scripts/test-deployment.js --db "postgresql://..." --redis "rediss://..."
  */
 
@@ -100,7 +100,7 @@ async function testPostgreSQL() {
   const prismaPkg = resolveWorkspaceModule('@prisma/client');
   if (!prismaPkg || !prismaPkg.PrismaClient) {
     result.status = 'FAILED';
-    result.details = 'Could not load @prisma/client. Run `npm install` in apps/api';
+    result.details = 'Could not load @prisma/client. Run npm ci and generate the Prisma client.';
     return result;
   }
 
@@ -146,7 +146,7 @@ async function testRedis() {
   const Redis = resolveWorkspaceModule('ioredis');
   if (!Redis) {
     result.status = 'FAILED';
-    result.details = 'Could not load ioredis module. Run `npm install` in apps/api';
+    result.details = 'Could not load ioredis module. Run npm ci in the API workspace.';
     return result;
   }
 
@@ -160,13 +160,14 @@ async function testRedis() {
       connectTimeout: 5000,
       maxRetriesPerRequest: 1,
       lazyConnect: true,
-      ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
+      // ioredis/Node TLS defaults validate the server certificate. Never
+      // disable certificate verification in a deployment verification tool.
+      ...(isTls ? { tls: {} } : {}),
     };
 
     client = REDIS_URL
       ? new Redis(REDIS_URL, opts)
       : new Redis({ host: REDIS_HOST, port: REDIS_PORT, password: REDIS_PASSWORD, ...opts });
-    client.on('error', () => {});
     client.on('error', () => {});
 
     await client.connect();
@@ -176,7 +177,7 @@ async function testRedis() {
     }
 
     // Test write/read/delete roundtrip
-    const testKey = 'seethapaati:deploy:test';
+    const testKey = `seethapaati:deploy:test:${process.pid}`;
     await client.set(testKey, 'ok', 'EX', 10);
     const readBack = await client.get(testKey);
     await client.del(testKey);
@@ -218,7 +219,7 @@ async function testHealthEndpoint() {
     try {
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'Accept': 'application/json', 'User-Agent': 'SeethapaatiDeploymentTest/1.0' },
+        headers: { Accept: 'application/json', 'User-Agent': 'SeethapaatiDeploymentTest/1.0' },
         signal: AbortSignal.timeout(6000),
       });
 
@@ -260,10 +261,14 @@ async function run() {
   console.log('RESULTS:');
   console.log('----------------------------------------------------------------');
   let hasFailure = false;
+  let passedCount = 0;
 
   for (const t of tests) {
     let icon = '⚪ [SKIP]';
-    if (t.status === 'PASSED') icon = '🟢 [PASS]';
+    if (t.status === 'PASSED') {
+      icon = '🟢 [PASS]';
+      passedCount++;
+    }
     if (t.status === 'FAILED') {
       icon = '🔴 [FAIL]';
       hasFailure = true;
@@ -277,17 +282,17 @@ async function run() {
   }
 
   console.log('----------------------------------------------------------------');
-  if (hasFailure) {
-    console.log('⚠️  Deployment verification finished with warnings or failures.');
-    console.log('    Check environment variables in Render/Vercel dashboard.');
+  if (hasFailure || passedCount === 0) {
+    console.log('⚠️  Deployment verification did not pass. At least one configured target must be reachable and no configured target may fail.');
+    console.log('    Check the explicit --db, --redis and --api targets and the deployment environment.');
     process.exit(1);
-  } else {
-    console.log('✅ All configured deployment targets responded successfully.');
-    process.exit(0);
   }
+
+  console.log('✅ All configured deployment targets responded successfully.');
+  process.exit(0);
 }
 
 run().catch((err) => {
-  console.error('Fatal test error:', err);
+  console.error('Fatal test error:', err instanceof Error ? err.message : 'Unknown error');
   process.exit(1);
 });
