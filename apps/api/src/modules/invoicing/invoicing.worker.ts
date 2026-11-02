@@ -35,7 +35,8 @@ export class InvoicingWorker implements OnModuleDestroy {
         }
       }
     } catch (error) {
-      this.logger.error(`Outbox polling failed: ${error instanceof Error ? error.message : String(error)}`);
+      const errorType = error instanceof Error ? error.name : 'UnknownError';
+      this.logger.error(`Invoice outbox polling failed (${errorType})`);
     } finally {
       this.running = false;
     }
