@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 
@@ -58,14 +64,15 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
           maxRetriesPerRequest: null,
         };
 
-    // Instantiate core queues gracefully
+    // BullMQ Queue construction is lazy; connection failures can still surface
+    // asynchronously when a job is submitted. addJob deliberately propagates them.
     for (const name of Object.values(QueueName)) {
       try {
         const queue = new Queue(name, { connection });
         this.queues.set(name, queue);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        this.logger.warn(`Could not initialize BullMQ queue ${name}: ${msg}. Operating in graceful degradation mode.`);
+        this.logger.warn(`Could not initialize BullMQ queue ${name}: ${msg}.`);
       }
     }
 
@@ -75,7 +82,15 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   async addJob<T>(queueName: QueueName, jobName: string, data: T, opts?: Record<string, unknown>) {
     const queue = this.queues.get(queueName);
     if (!queue) {
-      this.logger.warn(`Queue ${queueName} not available. Job ${jobName} skipped in graceful mode.`);
+      const message = `Queue ${queueName} is not available; job ${jobName} was not enqueued.`;
+      if (this.isProduction) {
+        this.logger.error(message);
+        throw new ServiceUnavailableException({
+          error: 'QUEUE_UNAVAILABLE',
+          message: 'Background job service is unavailable. The operation was not queued.',
+        });
+      }
+      this.logger.warn(`${message} Returning null in development mode.`);
       return null;
     }
     return await queue.add(jobName, data, opts);
