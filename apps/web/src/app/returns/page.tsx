@@ -5,7 +5,7 @@ import { ShieldAlert, RefreshCw, CheckCircle, ArrowRight, MessageCircle, Mail } 
 export const metadata = {
   title: 'Returns & Refund Policy | Seethapaati',
   description:
-    'Clear, fair return and refund policy for Seethapaati artisanal pantry items. 100% replacement guarantee for damaged or incorrect deliveries.',
+    'How to contact Seethapaati about damaged, incorrect or missing items and request a return or refund review.',
 };
 
 export default function ReturnsPage() {
@@ -20,7 +20,7 @@ export default function ReturnsPage() {
           Returns &amp; Refunds
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-[#181513]/70 md:text-base">
-          Our food items are crafted to the highest food-safety standards. While unopened food products cannot be restocked for hygiene reasons, your complete satisfaction is protected by our Heirloom Quality Guarantee.
+          Contact our team promptly if an item is damaged, incorrect, missing or appears compromised. Requests are reviewed against the order details, item condition and applicable consumer protections.
         </p>
       </header>
 
@@ -31,15 +31,15 @@ export default function ReturnsPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">1. Food Hygiene &amp; Perishability Policy</h2>
             <p className="mt-3">
-              Because Seethapaati provisions are edible, perishable artisanal food goods prepared without artificial chemical preservatives, <strong>we cannot accept physical returns of opened or unsealed jars and tins</strong> once delivered. This ensures that every customer receives goods of impeccable purity and unquestioned hygiene straight from our kitchen.
+              Food products can require special handling for health and safety reasons. Return eligibility depends on the issue and item condition. This policy does not restrict remedies or rights that apply under Indian consumer law, including for defective, damaged, incorrect or misdescribed goods.
             </p>
           </section>
 
           {/* Section 2: Transit Damage & Quality Replacement Guarantee */}
           <section>
-            <h2 className="font-serif text-2xl text-[#181513]">2. The 7-Day Heirloom Replacement Guarantee</h2>
+            <h2 className="font-serif text-2xl text-[#181513]">2. Damaged, Incorrect or Missing Items</h2>
             <p className="mt-3">
-              You are entitled to an immediate, complimentary replacement or full refund under any of the following circumstances:
+              If your order is damaged in transit, contains incorrect or missing items, or arrives with a compromised seal, contact support with your order number and clear evidence. The team will review the issue and confirm the available remedy under applicable law and the approved business policy.
             </p>
             <div className="mt-4 space-y-3">
               <div className="flex items-start gap-3 border border-[#E3DFD7] bg-white/60 p-4">
@@ -78,7 +78,7 @@ export default function ReturnsPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">3. How to Initiate a Replacement or Refund</h2>
             <p className="mt-3">
-              Please notify us within <strong>7 days of delivery</strong> by following these two quick steps:
+              Please contact support as soon as reasonably possible after delivery so the issue can be reviewed. This request guidance does not limit any statutory consumer rights.
             </p>
             <ol className="mt-3 list-decimal list-inside space-y-2 text-xs text-[#181513]/75">
               <li>
@@ -102,7 +102,7 @@ export default function ReturnsPage() {
               </li>
             </ol>
             <p className="mt-3 text-xs text-[#181513]/70">
-              Our kitchen concierge will review the details and dispatch an expedited fresh replacement within 24 hours at no extra charge.
+              Our support team will review the details and confirm the next steps. A replacement or refund is not considered approved until the team confirms it.
             </p>
           </section>
 
@@ -110,14 +110,14 @@ export default function ReturnsPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">4. Refund Settlement Timelines</h2>
             <p className="mt-3">
-              If you prefer a monetary refund rather than a product replacement, the refund will be initiated within <strong>24 business hours</strong> of approval:
+              If a refund is approved, it is submitted through the configured payment gateway. The time for the amount to appear in your account depends on the payment provider and issuing bank:
             </p>
             <ul className="mt-2 list-disc list-inside space-y-1 text-xs text-[#181513]/70">
               <li>
-                <strong>UPI &amp; NetBanking:</strong> Settles into your bank account within 2 to 4 business days.
+                <strong>UPI &amp; NetBanking:</strong> Settlement timing varies by payment provider and bank.
               </li>
               <li>
-                <strong>Debit / Credit Cards:</strong> Settles within 5 to 7 banking days depending on your issuing bank.
+                <strong>Debit / Credit Cards:</strong> Settlement timing varies by card network and issuing bank.
               </li>
             </ul>
           </section>
