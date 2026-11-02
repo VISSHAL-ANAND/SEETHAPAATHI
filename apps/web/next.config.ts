@@ -26,6 +26,27 @@ function validatePublicBusinessConfiguration() {
     throw new Error(`Production business disclosures are incomplete or still contain template values: ${missing.join(', ')}`);
   }
 
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!configuredSiteUrl) {
+    throw new Error('NEXT_PUBLIC_SITE_URL must be set to the purchased canonical HTTPS domain.');
+  }
+  let siteUrl: URL;
+  try {
+    siteUrl = new URL(configuredSiteUrl);
+  } catch {
+    throw new Error('NEXT_PUBLIC_SITE_URL must be a valid absolute HTTPS URL.');
+  }
+  if (
+    siteUrl.protocol !== 'https:' ||
+    siteUrl.username ||
+    siteUrl.password ||
+    siteUrl.pathname !== '/' ||
+    siteUrl.search ||
+    siteUrl.hash
+  ) {
+    throw new Error('NEXT_PUBLIC_SITE_URL must be a canonical HTTPS origin without credentials, path, query or fragment.');
+  }
+
   const emailKeys = [
     'NEXT_PUBLIC_GRIEVANCE_EMAIL',
     'NEXT_PUBLIC_PRIVACY_EMAIL',
