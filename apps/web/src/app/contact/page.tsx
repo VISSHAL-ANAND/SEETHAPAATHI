@@ -70,7 +70,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">WhatsApp Care</p>
                 <p className="mt-0.5 text-sm font-medium text-[#181513]">{BUSINESS_INFO.supportPhoneDisplay}</p>
-                <p className="mt-1 text-[11px] text-[#181513]/60">Instant response during business hours</p>
+                <p className="mt-1 text-[11px] text-[#181513]/60">Contact support on WhatsApp</p>
               </div>
             </a>
 
@@ -84,7 +84,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Email Concierge</p>
                 <p className="mt-0.5 text-sm font-medium text-[#181513]">{BUSINESS_INFO.supportEmail}</p>
-                <p className="mt-1 text-[11px] text-[#181513]/60">Replies within 12 business hours</p>
+                <p className="mt-1 text-[11px] text-[#181513]/60">Contact support by email</p>
               </div>
             </a>
 
@@ -93,7 +93,7 @@ export default function ContactPage() {
                 <MapPin className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Heritage Kitchen &amp; Studio</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Registered Office</p>
                 <p className="mt-0.5 text-xs font-medium text-[#181513] leading-relaxed">
                   {BUSINESS_INFO.registeredOffice}
                 </p>
@@ -107,8 +107,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Operational Hours</p>
                 <p className="mt-0.5 text-xs font-medium text-[#181513]">
-                  Monday – Saturday: 9:00 AM – 7:00 PM IST<br />
-                  Sunday: Closed for family recipes
+                  For current support hours, please contact our team using the channels shown.
                 </p>
               </div>
             </div>
@@ -121,13 +120,13 @@ export default function ContactPage() {
               <div className="border-b border-[#E3DFD7]/60 pb-3">
                 <p className="font-semibold text-[#181513]">When will my order ship?</p>
                 <p className="mt-1">
-                  Every batch is freshly ground or packed within 24 to 48 hours from our Mylapore kitchen. Dispatch and delivery timelines depend on the destination and the carrier service available for the order. We share tracking details after dispatch.
+                  Packing and dispatch timing can vary with stock and order volume. We share order status updates as the order moves through fulfilment.
                 </p>
               </div>
               <div className="border-b border-[#E3DFD7]/60 pb-3">
                 <p className="font-semibold text-[#181513]">Do you provide bulk gifting for weddings &amp; celebrations?</p>
                 <p className="mt-1">
-                  Yes, we curate bespoke brass and heritage cloth-wrapped gift boxes. Please select &ldquo;Bespoke Gifting&rdquo; in the form or WhatsApp our team directly.
+                  For bulk or gifting enquiries, contact our team with the quantities and target date. Availability and terms will be confirmed before an order is placed.
                 </p>
               </div>
               <div>
