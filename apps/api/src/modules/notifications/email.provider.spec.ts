@@ -49,4 +49,24 @@ describe('EmailProvider', () => {
     const provider = new EmailProvider(config);
     await expect(provider.send(message)).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
+  it('does not persist provider response bodies that may contain personal data', async () => {
+    const config = {
+      get: jest.fn((key: string, fallback?: unknown) => {
+        if (key === 'RESEND_API_KEY') return 're_test_example';
+        if (key === 'EMAIL_FROM') return 'orders@example.com';
+        if (key === 'NODE_ENV') return 'test';
+        return fallback;
+      }),
+    } as unknown as ConfigService;
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: async () => 'customer@example.com rejected',
+    } as Response);
+
+    const provider = new EmailProvider(config);
+    await expect(provider.send(message)).rejects.toThrow('HTTP 422');
+    await expect(provider.send(message)).rejects.not.toThrow('customer@example.com');
+  });
+
 });
