@@ -34,7 +34,19 @@ MOCK
 
 cat > "$mock_bin/curl" <<'MOCK'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >> "$MOCK_CURL_LOG"
+config="$(cat)"
+{
+  printf 'ARGS:%s\n' "$*"
+  printf 'CONFIG:%s\n' "$config"
+} >> "$MOCK_CURL_LOG"
+if [[ "$*" == *"alerts.example.test"* ]]; then
+  echo "Webhook URL leaked into curl arguments." >&2
+  exit 2
+fi
+if [[ "$config" != *'url = "https://alerts.example.test/webhook"'* ]]; then
+  echo "Webhook URL was not supplied through curl stdin config." >&2
+  exit 2
+fi
 MOCK
 
 chmod +x "$mock_bin/psql" "$mock_bin/redis-cli" "$mock_bin/curl"
