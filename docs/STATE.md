@@ -6,7 +6,7 @@ Last updated: 2026-11-03
 
 Approved order: Phase 4 security/operations → Phase 5 production-readiness/deployment preparation → Phase 6 testing and E2E validation → Phase 3 India Post CEPt integration → hosting. All repository changes continue directly on `main`; no branches are created. No domain purchase, DNS cutover, external provider credential change, or production deployment has been performed.
 
-### Phase 4 — security and operations (repository changes and current-head CI verified; host operations pending)
+### Phase 4 — security and operations (repository guardrails and portable monitoring tooling prepared; provider setup pending)
 - Removed the Redis TLS certificate-verification bypass from the BullMQ application configuration and the deployment verification script. TLS is verified by default.
 - Production/staging queue submissions fail explicitly when a queue is unavailable; asynchronous enqueue errors propagate. Development retains the local fallback.
 - Redis readiness now tracks the authenticated/ready lifecycle rather than TCP connect. Rate-limit counter increments and expiry creation are atomic; production authentication rate limiting fails closed when Redis is unavailable.
@@ -14,7 +14,9 @@ Approved order: Phase 4 security/operations → Phase 5 production-readiness/dep
 - Provider response bodies are not copied into email/outbox error records; worker polling/reconciliation logs use safe error labels.
 - Admin upload request bytes are capped while reading the stream, before multipart parsing; the existing authenticated admin permission and image-signature checks remain.
 - Added deployment/operations monitoring and recovery runbooks.
-- Remaining external operations work: configure real host alerts, a tested backup/restore procedure and actual provider monitoring in the chosen hosting account.
+- Added `scripts/ops/capture-capacity.sh` for private, read-only PostgreSQL/Redis capacity snapshots, threshold evaluation and optional webhook alerts. CI validates its Bash syntax.
+- Added `.github/workflows/staging-availability.yml` for 10-minute staging storefront/API readiness probes and failure notifications. It remains disabled until a staging origin and alert webhook are configured.
+- These are repository-side tools, not completed provider provisioning. Remaining external work: configure and test the alert destination with two contacts, schedule capacity snapshots within the selected host/VPC, confirm provider storage/Redis capacity/retention, and complete backup/restore.
 
 ### Phase 5 — production readiness / deployment preparation (repository templates and CI verified; owner/domain/host values pending)
 - Added same-origin Next.js rewrites for browser `/api/v1/*` requests and made production canonical HTTPS origin required.
@@ -24,12 +26,13 @@ Approved order: Phase 4 security/operations → Phase 5 production-readiness/dep
 - Created `docs/runbooks/domain-and-hosting-cutover.md`, `docs/runbooks/operations-monitoring.md`, and `docs/runbooks/business-owner-launch-inputs.md`.
 - The legal entity, registration/FSSAI details, registered office, GSTIN, grievance/support contacts, return policy, product claims, canonical domain and host-specific URLs remain owner-supplied/verified inputs. Legal/tax counsel must review statutory policies and disclosures.
 
-### Phase 6 — testing and E2E validation (automated CI complete on exact current main; staging E2E remains pending)
+### Phase 6 — testing and E2E validation (automated CI verified on code-bearing commit; real staging E2E remains pending)
 - Added regression coverage for queue availability/enqueue errors, Redis readiness and atomic rate-limit counters, notification/email behavior, outbox lease ownership/retries, refund and invoice workers, and shipment dispatch/state transitions.
 - GitHub Actions run #257 on exact current `main` commit `c49c4cc371312913b603142ec3c728e4a3314fbc` passed all steps: clean PostgreSQL migrations, API typecheck/lint/tests/build, web typecheck/lint/build, production web build with explicit CI-only public config, API and web Docker image builds, and production Compose validation.
 - API test result on run #257: 31 suites passed; 205 tests passed; 0 failed.
-- This closes the automated CI gate for the current repository head. It does not close the staging browser/payment/refund/restore/load/security or business sign-off gates.
-- No real staging browser journey, Razorpay transaction/refund, backup restore drill, production load test, configured host alert drill or provider-level smoke test has been performed. These require staging/credentials/business approval and remain go-live gates.
+- This closes the automated CI gate for the code-bearing commit `c49c4cc...` at that time. Subsequent documentation-only commits were made, and run #260 for `16aa0d8...` was still in progress at the last check. Re-verify CI after the monitoring-tooling commit before treating the current head as green.
+- The new 10-minute staging availability workflow is only a synthetic uptime/readiness probe. It does not close browser checkout/payment/refund/restore/load/security or business sign-off gates.
+- No real staging browser journey, Razorpay transaction/refund, backup restore drill, production load test, configured host alert drill or provider-level capacity check has been performed. These require staging/credentials/business approval and remain go-live gates.
 
 ### Phase 3 — India Post CEPt integration (research and fail-closed foundation complete; live adapter not started)
 - The current API only validates PIN syntax and returns `verified: false`; manual India Post consignment entry/tracking remains supported.

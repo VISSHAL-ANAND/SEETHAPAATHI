@@ -7,7 +7,7 @@ Last updated: 2026-11-03
 - GitHub: https://github.com/VISSHAL-ANAND/SEETHAPAATHI
 - Current working branch: `main`
 - The current repair work was committed directly to `main`; no branches or pull requests were created.
-- Latest verified `main` head: `c49c4cc371312913b603142ec3c728e4a3314fbc` (`docs(readme): link release gates and production runbooks`). GitHub Actions run #257 passed on this exact SHA.
+- Latest `main` head before the 2026-11-03 monitoring continuation: `16aa0d8364f9e718ac129061d7c109351ea7e90e` (`docs(handoff): record latest green CI and pending external gates`). Run #257 passed on the earlier code-bearing commit `c49c4cc371312913b603142ec3c728e4a3314fbc`; run #260 for `16aa0d8...` was still in progress at last inspection. Re-check the new continuation commit's own CI before claiming current-head green.
 - No repository-level `AGENTS.md`, `docs/STATE.md`, or `docs/TASKS.md` was present during the audit. This handover is the current continuity record.
 
 ## Product and architecture
@@ -195,3 +195,14 @@ Never mark the project fully launch-ready until all external and staging gates a
 - Phase 6 automated CI is green on the exact head. Real staging browser E2E, Razorpay test payment/refund runs, shipping dispatch journey, restore drill, load test and final security/business acceptance remain pending.
 - Phase 3 public research and safe fail-closed PIN validation are in place. Live India Post integration remains blocked on current merchant eligibility/contract, Customer ID, APT/CEPT specification, UAT credentials, IP allowlisting and written production approval. No guessed API adapter has been implemented.
 - Hosting remains intentionally unstarted. Do not change DNS, add live credentials, create production services or deploy until the remaining gates are closed.
+
+
+## 2026-11-03 monitoring and release-gate continuation
+
+- Added `scripts/ops/capture-capacity.sh`: read-only PostgreSQL database-size/connection checks, Redis memory/maxmemory/policy checks, optional upload-volume filesystem checks, warning/critical thresholds and optional Slack-compatible webhook alerting. The script expects secrets via environment variables and must run from a trusted host/VPC scheduler—not a public CI runner.
+- Added `.github/workflows/staging-availability.yml`: scheduled 10-minute HTTPS storefront and API readiness probes. It remains disabled until repository variables `STAGING_MONITORING_ENABLED`, `STAGING_WEB_URL`, `STAGING_API_BASE_URL` and secret `MONITORING_ALERT_WEBHOOK_URL` are configured.
+- Added a CI Bash syntax check for the capacity script. The monitoring runbook now documents environment configuration, thresholds, secret handling and a forced alert test.
+- These additions do not mean monitoring has been activated: no staging URL, hosting provider, monitoring webhook, two-person alert destination, PostgreSQL/Redis credentials or provider capacity quota was available to configure.
+- Phase 5 owner-provided legal/tax/product/customer-support facts remain unverified and must not be populated with CI fixture/example values.
+- Phase 6 browser/payment/refund/backup-restore/load validation remains unexecuted because no staging deployment, staging users or Razorpay test environment were supplied. The availability probe is not a replacement for that testing.
+- No production deployment, DNS change or live secret update was performed.

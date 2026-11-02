@@ -1,6 +1,6 @@
 # Production operations and monitoring runbook
 
-Status: operational design. This repository does not currently provision an alerting vendor or external on-call destination. Configure the chosen host/provider monitoring before accepting live orders.
+Status: repository-side monitoring tooling is prepared; real provider dashboards, host scheduling and alert recipients are not configured yet. Complete the provider-specific steps below before accepting live orders.
 
 ## Service health
 
@@ -9,7 +9,39 @@ Status: operational design. This repository does not currently provision an aler
 - Public health: GET /api/v1/health. Use for basic service identity/uptime only.
 - Monitor storefront and API availability separately. A healthy API does not prove that Next.js rewrites, browser cookies, or checkout work.
 
-Configure provider health checks to use the readiness route for traffic eligibility and liveness only for process restart decisions. Do not expose internal database/Redis details beyond the public readiness response already returned by the app.
+Configure provider health checks to use the readiness route for traffic eligibility and liveness only for process restart decisions. Do not expose internal database/Redis details beyond the public readiness response already returned by the app. The API readiness response reports only broad dependency status; detailed capacity data is collected privately by the host-side script below.
+
+
+## Automated staging availability and capacity checks
+
+### Staging synthetic availability
+
+`.github/workflows/staging-availability.yml` contains a GitHub Actions probe that runs every 10 minutes after it is enabled. It checks the staging storefront over HTTPS and requires the API `/health/ready` response to report `status: ready`. A failed probe posts a Slack-compatible JSON message (`{"text":"..."}`) to the configured operations webhook.
+
+Configure these repository variables only after a real staging deployment exists:
+
+- `STAGING_MONITORING_ENABLED=true` (enables the scheduled job).
+- `STAGING_WEB_URL=https://<staging-storefront-origin>` (origin only).
+- `STAGING_API_BASE_URL=https://<staging-api-origin>/api/v1`.
+
+Configure repository secret `MONITORING_ALERT_WEBHOOK_URL` with a webhook that accepts the documented JSON body. Its destination channel must include at least two responsible contacts. Test the route and obtain acknowledgement from both contacts before treating alert routing as complete. Do not put webhook URLs or provider credentials in Git.
+
+This workflow is an availability probe, not browser E2E, payment testing, database restore validation or infrastructure capacity monitoring. It is intentionally skipped until `STAGING_MONITORING_ENABLED` is set to `true`.
+
+### PostgreSQL and Redis capacity snapshot
+
+Run `scripts/ops/capture-capacity.sh` from a trusted host-side scheduler or private operations runner that can reach PostgreSQL and Redis. Do not run it on a public GitHub-hosted runner or expose database/Redis ports to the public internet.
+
+Required environment (inject secrets using the selected host's secret manager):
+
+- PostgreSQL: `PGHOST`, `PGPORT` (default 5432), `PGDATABASE`, `PGUSER` (read-only monitoring account), `PGPASSWORD`, and `PGSSLMODE` (defaults to `require`).
+- Redis: `REDIS_HOST`, `REDIS_PORT` (default 6379), `REDISCLI_AUTH`, and `REDIS_TLS=1` when the provider requires TLS.
+- Optional provider/storage values: `PG_STORAGE_LIMIT_BYTES` from the provider's database-storage quota and `OPS_STORAGE_PATH` for the persistent upload volume mount.
+- Optional alert delivery: `OPS_ALERT_WEBHOOK_URL`, using the same Slack-compatible `{"text":"..."}` payload contract. `OPS_FORCE_ALERT=1` sends a test alert after the snapshot is collected.
+
+The script collects database size and connection utilization, Redis memory/maxmemory/eviction policy and optional upload-filesystem utilization. It reports initial warning/critical thresholds using the table below. Any warning/critical condition exits non-zero; configure the provider scheduler/log monitor to alert on that exit as well as use the webhook. The database size percentage is only an estimate against the quota supplied in `PG_STORAGE_LIMIT_BYTES`; the managed provider dashboard remains authoritative for total storage use, WAL, backups and service-specific quotas.
+
+Schedule the script at least every five minutes, retain aggregate snapshots for trend analysis, and test alert routing with `OPS_FORCE_ALERT=1`. Verify the channel reaches two named people and record each acknowledgement. Use a read-only database role with only the statistics access needed; do not grant application write permissions to the monitoring account. The script never emits credentials or customer records.
 
 ## Business-critical signals
 

@@ -1,0 +1,94 @@
+name: Staging availability monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-availability
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    # Enable only after a real staging origin and the alert destination are configured.
+    if: ${{ vars.STAGING_MONITORING_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      STAGING_WEB_URL: ${{ vars.STAGING_WEB_URL }}
+      STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+      MONITORING_ALERT_WEBHOOK_URL: ${{ secrets.MONITORING_ALERT_WEBHOOK_URL }}
+    steps:
+      - name: Validate staging monitor configuration
+        shell: bash
+        run: |
+          node <<'NODE'
+          const web = process.env.STAGING_WEB_URL;
+          const api = process.env.STAGING_API_BASE_URL;
+          const webhook = process.env.MONITORING_ALERT_WEBHOOK_URL;
+          if (!web || !api || !webhook) {
+            throw new Error('Set STAGING_WEB_URL, STAGING_API_BASE_URL and MONITORING_ALERT_WEBHOOK_URL before enabling monitoring.');
+          }
+          const webUrl = new URL(web);
+          const apiUrl = new URL(api);
+          for (const [name, url] of [['STAGING_WEB_URL', webUrl], ['STAGING_API_BASE_URL', apiUrl]]) {
+            if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+              throw new Error(name + ' must be an HTTPS URL without credentials, query or fragment.');
+            }
+          }
+          if (webUrl.pathname !== '/' || webUrl.search || webUrl.hash) {
+            throw new Error('STAGING_WEB_URL must be the HTTPS origin (no path, query or fragment).');
+          }
+          if (!apiUrl.pathname.replace(/\/+$/, '').endsWith('/api/v1')) {
+            throw new Error('STAGING_API_BASE_URL must end in /api/v1.');
+          }
+          NODE
+
+      - name: Check storefront availability
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 \
+            "$STAGING_WEB_URL/" --output /dev/null
+
+      - name: Check API dependency readiness
+        shell: bash
+        run: |
+          response="$(curl --fail --silent --show-error --location \
+            --connect-timeout 10 --max-time 20 --retry 2 --retry-delay 2 \
+            "${STAGING_API_BASE_URL%/}/health/ready")"
+          printf '%s' "$response" | node -e '
+            let raw = "";
+            process.stdin.setEncoding("utf8");
+            process.stdin.on("data", chunk => raw += chunk);
+            process.stdin.on("end", () => {
+              try {
+                const body = JSON.parse(raw);
+                if (body.status !== "ready") {
+                  console.error("API readiness did not report ready.");
+                  process.exit(1);
+                }
+              } catch {
+                console.error("API readiness returned invalid JSON.");
+                process.exit(1);
+              }
+            });
+          '
+
+      - name: Send failure alert to operations channel
+        if: failure()
+        shell: bash
+        run: |
+          message="SEETHAPAATHI staging availability check failed. Commit: $GITHUB_SHA. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          payload="$(node -e 'process.stdout.write(JSON.stringify({text: process.argv[1]}))' "$message")"
+          if ! curl --silent --show-error --fail --max-time 10 \
+            -H 'Content-Type: application/json' \
+            --data "$payload" \
+            "$MONITORING_ALERT_WEBHOOK_URL" >/dev/null; then
+            echo "Operations alert delivery failed; webhook response details were suppressed." >&2
+            exit 1
+          fi

@@ -12,8 +12,10 @@
 - [x] Enforce upload request byte limit while streaming, before multipart parsing.
 - [x] Add worker/outbox/Redis/queue/upload-related regression coverage.
 - [x] Document production monitoring, alert thresholds and recovery procedures.
-- [ ] Configure actual provider/host alerts and route a test alert to two responsible contacts.
-- [ ] Verify Redis/DB capacity monitoring and retention with the selected provider.
+- [x] Add a private read-only PostgreSQL/Redis capacity snapshot script with warning/critical thresholds and optional webhook alert delivery.
+- [x] Add a 10-minute staging storefront/API readiness workflow with failure alert delivery; it is disabled until real staging settings are supplied.
+- [ ] Configure actual provider/host alerts and route a test alert to two responsible contacts; obtain acknowledgement from both.
+- [ ] Schedule private capacity snapshots in the selected host/VPC; verify provider DB/Redis storage, retention, maxmemory and noeviction settings.
 
 ### Phase 5 — production-readiness and deployment preparation
 - [x] Add same-origin browser API rewrite through configured API URL.
@@ -39,6 +41,7 @@
 - [x] Add regression tests for shipment dispatch eligibility, duplicate creation and tracking transitions.
 - [x] Confirm full CI run #237 on commit `edb1c44`: clean migrations, API typecheck/lint/tests/build, web typecheck/lint/build, API/web Docker builds and production Compose validation passed.
 - [x] Obtain a successful full CI run for the exact current `main` head: run #257 on `c49c4cc371312913b603142ec3c728e4a3314fbc`; 31 API test suites and 205 tests passed, plus API/web typecheck/lint/build, clean migrations, both Docker image builds and production Compose validation.
+- [x] Add a disabled-until-configured staging availability workflow for storefront/API readiness (synthetic probe only).
 - [ ] Run browser E2E on a real staging origin: sign-in/session, catalog, cart, checkout, admin upload, order history and tracking.
 - [ ] Run Razorpay test-mode success/failure/duplicate webhook/stockout/refund/partial and full refund scenarios.
 - [ ] Run the staging shipping/dispatch/manual tracking journey and confirm notification behavior.
@@ -82,8 +85,7 @@
 
 ## Latest CI evidence — 2026-11-03
 
-- Current `main` head at verification: `c49c4cc371312913b603142ec3c728e4a3314fbc`.
-- GitHub Actions run [#257](https://github.com/VISSHAL-ANAND/SEETHAPAATHI/actions/runs/41499771409): success on the exact head.
-- API tests: 31 suites passed, 205 tests passed, 0 failed.
-- API/web typecheck and lint, API/web builds, clean PostgreSQL migrations, API/web production Docker builds and Compose validation all passed.
-- This is automated CI evidence only; it is not staging E2E or production acceptance.
+- Before this continuation, `main` was at `16aa0d8364f9e718ac129061d7c109351ea7e90e`.
+- GitHub Actions run [#257](https://github.com/VISSHAL-ANAND/SEETHAPAATHI/actions/runs/41499771409) succeeded on the earlier code-bearing commit `c49c4cc371312913b603142ec3c728e4a3314fbc`: 31 API suites, 205 tests, zero failures; clean migrations, API/web typecheck/lint/build, production Docker builds and Compose validation passed.
+- Run [#260](https://github.com/VISSHAL-ANAND/SEETHAPAATHI/actions/runs/41501504056) for the previous documentation-only head `16aa0d8...` was still `in_progress` at the time of inspection. The monitoring changes in this commit require their own CI result.
+- CI evidence does not substitute for real staging browser/payment/refund/restore/load tests or provider/business acceptance.
