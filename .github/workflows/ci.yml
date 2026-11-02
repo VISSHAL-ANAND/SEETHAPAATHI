@@ -43,7 +43,11 @@ jobs:
       - run: npm run build --workspace=@seethapaati/api
       - run: npm run typecheck --workspace=@seethapaati/web
       - run: npm run lint --workspace=@seethapaati/web
-      - run: npm run build --workspace=@seethapaati/web
+      - name: Build web application with explicit CI-only public origins
+        env:
+          NEXT_PUBLIC_SITE_URL: https://store.example.test
+          NEXT_PUBLIC_API_URL: https://api.example.test/api/v1
+        run: npm run build --workspace=@seethapaati/web
       - name: Build API production image
         run: docker build -f apps/api/Dockerfile -t seethapaati-api:ci .
       - name: Build web production image
