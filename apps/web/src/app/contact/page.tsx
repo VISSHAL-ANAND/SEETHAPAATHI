@@ -95,8 +95,7 @@ export default function ContactPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#181513]">Heritage Kitchen &amp; Studio</p>
                 <p className="mt-0.5 text-xs font-medium text-[#181513] leading-relaxed">
-                  14/2 South Mada Street, Mylapore<br />
-                  Chennai, Tamil Nadu 600004, India
+                  {BUSINESS_INFO.registeredOffice}
                 </p>
               </div>
             </div>
