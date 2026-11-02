@@ -35,7 +35,7 @@ export default function ReturnsPage() {
             </p>
           </section>
 
-          {/* Section 2: Transit Damage & Quality Replacement Guarantee */}
+          {/* Section 2: Damaged, Incorrect or Missing Items */}
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">2. Damaged, Incorrect or Missing Items</h2>
             <p className="mt-3">
