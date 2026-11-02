@@ -1,3 +1,4 @@
+import { BUSINESS_INFO } from '../../lib/business-info';
 import Link from 'next/link';
 import { Truck, ShieldCheck, Clock, MapPin, PackageCheck, ArrowRight } from 'lucide-react';
 
@@ -140,8 +141,8 @@ export default function ShippingPage() {
               Experiencing an unexpected transit delay or need an address correction? Contact our concierge team immediately:
             </p>
             <p className="font-medium text-[#181513]">
-              Email: care@seethapaati.com<br />
-              WhatsApp: +91 98400 12345
+              Email: {BUSINESS_INFO.supportEmail}<br />
+              WhatsApp: {BUSINESS_INFO.supportPhoneDisplay}
             </p>
           </div>
         </aside>
