@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis, { RedisOptions } from 'ioredis';
 
@@ -169,10 +169,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         const ttl = Number.isFinite(ttlSeconds) && (ttlSeconds ?? 0) > 0 ? Math.floor(ttlSeconds!) : 0;
         return Number(await this.client.eval(INCREMENT_WITH_TTL_SCRIPT, 1, key, ttl));
       } catch (err) {
-        this.logger.warn(`Redis incr failed (${(err as Error).message}), falling back to memory.`);
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Redis incr failed (${message}).`);
+        if (this.isProduction) {
+          throw new ServiceUnavailableException({
+            error: 'RATE_LIMIT_STORE_UNAVAILABLE',
+            message: 'Authentication rate limiting is temporarily unavailable.',
+          });
+        }
       }
+    } else if (this.isProduction) {
+      throw new ServiceUnavailableException({
+        error: 'RATE_LIMIT_STORE_UNAVAILABLE',
+        message: 'Authentication rate limiting is temporarily unavailable.',
+      });
     }
 
+    // A process-local counter is useful for development only. It is not a
+    // distributed rate limiter and must never be used to protect production auth.
     const item = this.memoryFallback.get(key);
     const next = item && (!item.expiresAt || item.expiresAt >= Date.now()) ? Number(item.value) + 1 : 1;
     this.memoryFallback.set(key, { value: String(next), expiresAt: ttlSeconds ? Date.now() + ttlSeconds * 1000 : item?.expiresAt });
