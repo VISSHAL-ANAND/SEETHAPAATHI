@@ -86,6 +86,19 @@ npm test --workspace=@seethapaati/api -- --runInBand
 
 CI runs Prisma migrations against a clean PostgreSQL service, API typecheck/lint/tests/build, and web typecheck/lint/build. Keep these checks green before deployment.
 
+## Release and launch runbooks
+
+Use these documents before any production cutover:
+
+- [Production launch guide](./PRODUCTION_LAUNCH.md) — supported environment variables, migrations and hosting paths.
+- [Staging end-to-end validation](./docs/runbooks/staging-e2e-validation.md) — required payment, checkout, refund, upload, shipping and recovery tests. This is a test plan, not a report of tests already executed.
+- [Business-owner launch inputs](./docs/runbooks/business-owner-launch-inputs.md) — verified legal, tax, FSSAI, support, policy and provider inputs that must come from the business.
+- [Domain and hosting cutover](./docs/runbooks/domain-and-hosting-cutover.md) — canonical domain, same-origin API routing, DNS and HTTPS steps.
+- [Operations monitoring](./docs/runbooks/operations-monitoring.md) — health checks, alerts, refund/outbox recovery and database restore drill.
+- [India Post CEPt onboarding](./docs/runbooks/india-post-cept-onboarding.md) — current public research and the external approval/UAT gate. The live adapter remains disabled until the current contract and credentials are approved.
+
+Do not deploy because a build or CI run passed alone. The exact deployment commit must pass CI, staging E2E, backup/restore and business/legal/provider sign-off.
+
 ## Production deployment
 
 See [PRODUCTION_LAUNCH.md](./PRODUCTION_LAUNCH.md) for environment setup, migrations, deployment, and provider configuration.
