@@ -5,7 +5,7 @@ import { Truck, ShieldCheck, Clock, MapPin, PackageCheck, ArrowRight } from 'luc
 export const metadata = {
   title: 'Shipping & Delivery Policy | Seethapaati',
   description:
-    'Comprehensive delivery terms for Seethapaati heirloom foods. Pan-India shipping with complimentary delivery on orders above ₹499 and live courier tracking.',
+    'Shipping charges, dispatch information and tracking availability for Seethapaati orders. Carrier serviceability and delivery estimates are confirmed separately.',
 };
 
 export default function ShippingPage() {
@@ -20,7 +20,7 @@ export default function ShippingPage() {
           Shipping &amp; Delivery
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-[#181513]/70 md:text-base">
-          Every parcel leaves our Mylapore kitchen packaged with artisanal care. Here is everything you need to know about delivery timelines, shipping charges, and tracking.
+          Delivery options, dispatch information and tracking availability depend on the order and destination. Shipping charges are calculated at checkout.
         </p>
       </header>
 
@@ -33,25 +33,25 @@ export default function ShippingPage() {
             <div className="mt-4 space-y-3">
               <div className="border border-[#E3DFD7] bg-white/60 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-[#181513]">Orders above ₹499</span>
+                  <span className="font-semibold text-[#181513]">Orders of ₹500 or more</span>
                   <span className="font-semibold text-[#2E7D32] uppercase tracking-wider text-xs">
                     Free Delivery
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[#181513]/60">
-                  Complimentary express courier delivery anywhere across India.
+                  Free standard shipping when the post-discount merchandise value is ₹500 or more.
                 </p>
               </div>
 
               <div className="border border-[#E3DFD7] bg-white/60 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-[#181513]">Orders below ₹499</span>
+                  <span className="font-semibold text-[#181513]">Orders below ₹500</span>
                   <span className="font-semibold text-[#181513] tabular-nums">
-                    ₹49 Flat Rate
+                    ₹50 Standard Shipping
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-[#181513]/60">
-                  Nominal fee covering protective packaging and courier handling.
+                  Standard shipping charge for orders below the free-shipping threshold.
                 </p>
               </div>
             </div>
@@ -61,49 +61,24 @@ export default function ShippingPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">2. Dispatch Windows &amp; Estimated Transit Times</h2>
             <p className="mt-3">
-              Because our podis and spices are freshly milled in small batches without artificial anti-caking agents, orders are packed fresh and dispatched within <strong>24 to 48 business hours</strong> from our Chennai kitchen (excluding Sundays and national holidays).
+              Orders are prepared for dispatch after payment confirmation. Actual packing and handover times can vary with stock availability, order volume and operating days. Any estimate shared with an order is indicative, not a guaranteed delivery time.
             </p>
 
-            <div className="mt-4 overflow-hidden border border-[#E3DFD7]">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#ECE8E0] text-[#181513] uppercase tracking-wider font-semibold">
-                  <tr>
-                    <th className="p-3">Destination Region</th>
-                    <th className="p-3">Estimated Transit Window</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E3DFD7] bg-white/40">
-                  <tr>
-                    <td className="p-3 font-medium text-[#181513]">Chennai &amp; Tamil Nadu</td>
-                    <td className="p-3 text-[#181513]/70">1 to 2 business days</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-[#181513]">South India Metros (Bengaluru, Hyderabad, Kochi)</td>
-                    <td className="p-3 text-[#181513]/70">2 to 3 business days</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-[#181513]">West &amp; North Metros (Mumbai, Delhi NCR, Pune, Kolkata)</td>
-                    <td className="p-3 text-[#181513]/70">3 to 4 business days</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 font-medium text-[#181513]">Rest of India &amp; Tier 2/3 Regions</td>
-                    <td className="p-3 text-[#181513]/70">4 to 6 business days</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <p className="mt-3">
+              Transit time depends on the destination, selected postal service and carrier operations. The storefront does not currently receive live India Post route estimates, so it cannot promise a fixed delivery window before dispatch.
+            </p>
           </section>
 
           {/* Section 3: Couriers & Live Tracking */}
           <section>
-            <h2 className="font-serif text-2xl text-[#181513]">3. Courier Partners &amp; Live Tracking</h2>
+            <h2 className="font-serif text-2xl text-[#181513]">3. Carrier &amp; Tracking Status</h2>
             <p className="mt-3">
-              We dispatch 100% of our orders via India Post (Speed Post & Registered Parcel), guaranteeing reliable, state-backed delivery to every postal code across India.
+              India Post is the carrier currently supported by the manual dispatch workflow. A live India Post CEPt booking or route-serviceability integration is not enabled. A valid PIN-code format alone does not confirm that the selected service can deliver to a destination.
             </p>
             <p className="mt-2">
               As soon as your package is scanned at the hub, an automated SMS and WhatsApp update with your live tracking AWB link will be dispatched to your phone. You can also monitor your parcel status directly on our{' '}
               <Link href="/tracking" className="font-semibold text-[#A66B18] underline underline-offset-4">
-                Self-Service Tracking Portal
+                Order Tracking
               </Link>.
             </p>
           </section>
@@ -112,7 +87,7 @@ export default function ShippingPage() {
           <section>
             <h2 className="font-serif text-2xl text-[#181513]">4. Transit-Grade Packaging Guarantee</h2>
             <p className="mt-3">
-              To guarantee that fragile spices and oils arrive completely intact and fresh, every tin is hermetically sealed and placed inside thick corrugated mailers cushioned with 100% recyclable, biodegradable filler. In the rare event of transit damage, our immediate replacement policy protects every parcel.
+              We take care when preparing orders for transit. If an order arrives damaged or an item is missing, contact support with your order number and clear photos so the team can review the issue under the published returns policy.
             </p>
           </section>
         </div>
