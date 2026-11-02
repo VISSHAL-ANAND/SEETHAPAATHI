@@ -94,6 +94,16 @@ export const EnvSchema = z
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['CORS_ORIGIN'], message: 'Wildcard CORS is not allowed in production/staging' });
       }
     }
+    if (data.NODE_ENV === 'production' || data.NODE_ENV === 'staging') {
+      if (!data.REDIS_URL && (!data.REDIS_HOST || data.REDIS_HOST === 'localhost' || !data.REDIS_PASSWORD)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['REDIS_URL'],
+          message: 'Configure a real Redis service for production/staging; localhost or an unconfigured password is not allowed.',
+        });
+      }
+    }
+
     if (data.NODE_ENV === 'production') {
       if (
         data.JWT_SECRET === 'development_jwt_secret_must_be_changed_in_prod' ||
@@ -108,12 +118,32 @@ export const EnvSchema = z
         });
       }
 
-      // Production seller identity/address configuration must be explicitly supplied.
+      // Production seller identity/address must be actual registered details.
+      // Reject generic template values as well as the former hard-coded sample.
+      const sellerPlaceholderPattern = /placeholder|replace[_\\s-]?with|your_|example|change_me|sample/i;
+      const sellerFields: Array<[keyof typeof data, string]> = [
+        ['SELLER_LEGAL_NAME', data.SELLER_LEGAL_NAME],
+        ['SELLER_TRADE_NAME', data.SELLER_TRADE_NAME],
+        ['SELLER_ADDRESS_LINE1', data.SELLER_ADDRESS_LINE1],
+        ['SELLER_CITY', data.SELLER_CITY],
+        ['SELLER_STATE', data.SELLER_STATE],
+        ['SELLER_STATE_CODE', data.SELLER_STATE_CODE],
+        ['SELLER_PINCODE', data.SELLER_PINCODE],
+      ];
       const sellerPlaceholdersUsed =
         data.SELLER_LEGAL_NAME === SELLER_CONFIG_PLACEHOLDERS.legalName ||
         data.SELLER_ADDRESS_LINE1 === SELLER_CONFIG_PLACEHOLDERS.addressLine1 ||
         data.SELLER_CITY === SELLER_CONFIG_PLACEHOLDERS.city ||
         data.SELLER_PINCODE === SELLER_CONFIG_PLACEHOLDERS.pincode;
+      for (const [field, value] of sellerFields) {
+        if (sellerPlaceholderPattern.test(value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: 'Replace template seller details with the actual registered business information before production.',
+          });
+        }
+      }
       if (sellerPlaceholdersUsed) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -122,7 +152,7 @@ export const EnvSchema = z
         });
       }
 
-      const credentialPlaceholders = /placeholder|replace_with|your_|url_encoded|set_me|change_me|x{8,}/i;
+      const credentialPlaceholders = /placeholder|replace_with|your_|url_encoded|set_me|change_me|example|x{8,}/i;
       if (
         !data.RAZORPAY_KEY_ID.startsWith('rzp_live_') ||
         credentialPlaceholders.test(data.RAZORPAY_KEY_ID) ||
@@ -150,7 +180,7 @@ export const EnvSchema = z
         });
       }
 
-      if (data.EMAIL_FROM === 'onboarding@resend.dev') {
+      if (data.EMAIL_FROM === 'onboarding@resend.dev' || /example\\.(?:com|net|org|test)|replace_with|placeholder/i.test(data.EMAIL_FROM)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['EMAIL_FROM'],
