@@ -2,6 +2,15 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import Redis, { RedisOptions } from 'ioredis';
 
+const INCREMENT_WITH_TTL_SCRIPT = `
+local value = redis.call('INCR', KEYS[1])
+local ttl = tonumber(ARGV[1])
+if value == 1 and ttl and ttl > 0 then
+  redis.call('EXPIRE', KEYS[1], ttl)
+end
+return value
+`;
+
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
@@ -52,8 +61,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         enableReadyCheck: true,
         retryStrategy: (times: number) => {
           if (times > 3) {
-            this.logger.warn(`⚠️ Redis unreachable at ${targetDisplay}. Operating in memory fallback mode.`);
-            return null; // Stop reconnecting after 3 tries, use memory fallback
+            this.logger.warn(`Redis unreachable at ${targetDisplay}. Operating in memory fallback mode.`);
+            return null;
           }
           return Math.min(times * 200, 2000);
         },
@@ -74,9 +83,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             ...redisOptions,
           });
 
-      this.client.on('connect', () => {
+      // A TCP connection is not sufficient for readiness: wait until ioredis
+      // has completed authentication and its ready check.
+      this.client.on('ready', () => {
         this.isConnected = true;
-        this.logger.log(`✅ Redis connected at ${targetDisplay}`);
+        this.logger.log(`Redis ready at ${targetDisplay}`);
+      });
+
+      this.client.on('close', () => {
+        this.isConnected = false;
+        this.logger.warn(`Redis connection closed at ${targetDisplay}`);
+      });
+
+      this.client.on('end', () => {
+        this.isConnected = false;
+        this.logger.warn(`Redis connection ended at ${targetDisplay}`);
       });
 
       this.client.on('error', (err) => {
@@ -88,18 +109,18 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       await this.client.connect().catch((err) => {
         this.isConnected = false;
         this.logger.warn(
-          `⚠️ Redis connection failed at ${targetDisplay} (${err.message}). Gracefully using in-memory fallback. Server startup will continue normally.`,
+          `Redis connection failed at ${targetDisplay} (${err.message}). Gracefully using in-memory fallback. Server startup will continue normally.`,
         );
       });
 
       if (this.isConnected) {
-        this.logger.log(`✅ Redis connection verified at ${targetDisplay}.`);
+        this.logger.log(`Redis connection verified at ${targetDisplay}.`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.isConnected = false;
       this.logger.warn(
-        `⚠️ Redis initialization exception at ${targetDisplay}: ${msg}. Gracefully operating with in-memory fallback.`,
+        `Redis initialization exception at ${targetDisplay}: ${msg}. Gracefully operating with in-memory fallback.`,
       );
     }
   }
@@ -145,9 +166,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async incr(key: string, ttlSeconds?: number): Promise<number> {
     if (this.isConnected && this.client) {
       try {
-        const value = await this.client.incr(key);
-        if (value === 1 && ttlSeconds) await this.client.expire(key, ttlSeconds);
-        return value;
+        const ttl = Number.isFinite(ttlSeconds) && (ttlSeconds ?? 0) > 0 ? Math.floor(ttlSeconds!) : 0;
+        return Number(await this.client.eval(INCREMENT_WITH_TTL_SCRIPT, 1, key, ttl));
       } catch (err) {
         this.logger.warn(`Redis incr failed (${(err as Error).message}), falling back to memory.`);
       }
