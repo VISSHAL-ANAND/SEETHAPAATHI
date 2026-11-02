@@ -18,6 +18,16 @@ This plan is a release gate, not evidence that the tests have already been execu
 
 Record the commit SHA, deployment/build ID, test timestamp, environment, tester and evidence for each test. Redact session cookies, passwords, payment secrets, customer contact details and webhook payloads.
 
+## Safe API preflight (before browser E2E)
+
+The old `scripts/test-customer-flows.mjs` script is retired: it defaulted to a Render endpoint and expected a bearer token in the response, which does not match the current HttpOnly-cookie authentication contract. It now exits without making network requests.
+
+Use `scripts/test-staging-api-smoke.mjs` only against a dedicated staging deployment. It performs readiness and catalog GETs, logs in with an existing staging-only customer account, verifies the HttpOnly/Secure/SameSite cookie flags, checks `/auth/me`, logs out and verifies unauthenticated access. It does not register users, create carts/orders, or call payment providers.
+
+Set `STAGING_API_BASE_URL` to the actual staging HTTPS API URL ending in `/api/v1`, `STAGING_TEST_EMAIL` and `STAGING_TEST_PASSWORD` through a protected environment/secret manager, and `STAGING_CONFIRM_API_SMOKE=true` only after independently confirming the target is staging and not production. Run `node scripts/test-staging-api-smoke.mjs`. Never put credentials in Git or logs. This is an API preflight, not browser checkout E2E or Razorpay/refund validation.
+
+The full-site crawler `scripts/audit-full-site.mjs` also requires explicit `API_BASE_URL` and `WEB_BASE_URL` HTTPS settings; it has no default deployment target.
+
 ## Browser and authentication
 
 | ID | Scenario | Expected result |

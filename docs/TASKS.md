@@ -42,6 +42,9 @@
 - [x] Confirm full CI run #237 on commit `edb1c44`: clean migrations, API typecheck/lint/tests/build, web typecheck/lint/build, API/web Docker builds and production Compose validation passed.
 - [x] Obtain a successful full CI run for the exact current `main` head: run #257 on `c49c4cc371312913b603142ec3c728e4a3314fbc`; 31 API test suites and 205 tests passed, plus API/web typecheck/lint/build, clean migrations, both Docker image builds and production Compose validation.
 - [x] Add a disabled-until-configured staging availability workflow for storefront/API readiness (synthetic probe only).
+- [x] Retire the stale customer-flow script that used a provider default and bearer-token auth; require explicit HTTPS targets for the full-site crawler.
+- [x] Add a safe staging API preflight using readiness/catalog GETs and the current HttpOnly-cookie session contract.
+- [ ] Run the API preflight on the actual staging deployment with a dedicated test account.
 - [ ] Run browser E2E on a real staging origin: sign-in/session, catalog, cart, checkout, admin upload, order history and tracking.
 - [ ] Run Razorpay test-mode success/failure/duplicate webhook/stockout/refund/partial and full refund scenarios.
 - [ ] Run the staging shipping/dispatch/manual tracking journey and confirm notification behavior.

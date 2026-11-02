@@ -33,6 +33,9 @@ jobs:
         run: |
           bash -n scripts/ops/capture-capacity.sh
           bash scripts/ops/test-capture-capacity.sh
+          node --check scripts/test-customer-flows.mjs
+          node --check scripts/test-staging-api-smoke.mjs
+          node --check scripts/audit-full-site.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: 22
