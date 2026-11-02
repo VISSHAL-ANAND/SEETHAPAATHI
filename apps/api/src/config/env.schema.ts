@@ -132,9 +132,7 @@ export const EnvSchema = z
       ];
       const sellerPlaceholdersUsed =
         data.SELLER_LEGAL_NAME === SELLER_CONFIG_PLACEHOLDERS.legalName ||
-        data.SELLER_ADDRESS_LINE1 === SELLER_CONFIG_PLACEHOLDERS.addressLine1 ||
-        data.SELLER_CITY === SELLER_CONFIG_PLACEHOLDERS.city ||
-        data.SELLER_PINCODE === SELLER_CONFIG_PLACEHOLDERS.pincode;
+        data.SELLER_ADDRESS_LINE1 === SELLER_CONFIG_PLACEHOLDERS.addressLine1;
       for (const [field, value] of sellerFields) {
         if (sellerPlaceholderPattern.test(value) || (field === 'SELLER_STATE_CODE' && value === '00') || (field === 'SELLER_PINCODE' && value === '000000')) {
           ctx.addIssue({
