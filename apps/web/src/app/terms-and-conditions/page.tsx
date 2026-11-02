@@ -1,10 +1,11 @@
+import { BUSINESS_INFO } from '../../lib/business-info';
 import Link from 'next/link';
 import { ShieldCheck, Scale, AlertTriangle, FileText, CheckCircle } from 'lucide-react';
 
 export const metadata = {
   title: 'Terms & Conditions (Comprehensive Legal Agreement) | Seethapaati',
   description:
-    'Authoritative, legally binding terms of service, limitation of liability, allergen disclaimers, and dispute arbitration agreement for Seethapaati Heirloom Foods Private Limited.',
+    `Terms of service, limitation of liability, allergen disclosures and dispute terms for ${BUSINESS_INFO.legalEntityName}.`,
 };
 
 export default function TermsPage() {
@@ -19,8 +20,8 @@ export default function TermsPage() {
           Terms &amp; Conditions
         </h1>
         <p className="mt-4 text-xs font-medium text-[#181513]/70 leading-relaxed sm:text-sm">
-          <strong>Entity:</strong> Seethapaati Heirloom Foods Private Limited (CIN: U10799TN2026PTC158941) • FSSAI Lic. No: 12426999000142<br />
-          <strong>Registered Office:</strong> 14/2 South Mada Street, Mylapore, Chennai, Tamil Nadu 600004, India<br />
+          <strong>Entity:</strong> {BUSINESS_INFO.legalEntityName}{BUSINESS_INFO.registrationNumber ? ` (${BUSINESS_INFO.registrationLabel}: ${BUSINESS_INFO.registrationNumber})` : ''} • FSSAI Lic. No: {BUSINESS_INFO.fssaiLicenseNumber}<br />
+          <strong>Registered Office:</strong> {BUSINESS_INFO.registeredOffice}<br />
           <strong>Effective Date:</strong> January 1, 2026 • Governed under the laws of the Republic of India.
         </p>
       </header>
@@ -32,7 +33,7 @@ export default function TermsPage() {
           <span>Notice of Binding Arbitration &amp; Limitation of Liability</span>
         </div>
         <p className="mt-2 text-[#181513]/80">
-          PLEASE READ THESE TERMS CAREFULLY. BY BROWSING, REGISTERING, PURCHASING, OR OTHERWISE ACCESSING THIS STORE, YOU ENTER INTO A LEGALLY BINDING CONTRACT WITH SEETHAPAATI HEIRLOOM FOODS PRIVATE LIMITED. THESE TERMS CONTAIN A STRICT <strong>LIMITATION OF AGGREGATE LIABILITY CAPPED AT THE PURCHASE PRICE OF YOUR ORDER</strong>, MANDATORY INDIVIDUAL ARBITRATION IN CHENNAI, WAIVERS OF CLASS ACTION CLAIMS, AND COMPREHENSIVE ALLERGEN &amp; HEALTH DISCLAIMERS. IF YOU DO NOT AGREE, DO NOT PROCEED WITH ANY PURCHASE.
+          PLEASE READ THESE TERMS CAREFULLY. BY BROWSING, REGISTERING, PURCHASING, OR OTHERWISE ACCESSING THIS STORE, YOU ENTER INTO A LEGALLY BINDING CONTRACT WITH {BUSINESS_INFO.legalEntityName.toUpperCase()}. THESE TERMS CONTAIN A STRICT <strong>LIMITATION OF AGGREGATE LIABILITY CAPPED AT THE PURCHASE PRICE OF YOUR ORDER</strong>, MANDATORY INDIVIDUAL ARBITRATION IN CHENNAI, WAIVERS OF CLASS ACTION CLAIMS, AND COMPREHENSIVE ALLERGEN &amp; HEALTH DISCLAIMERS. IF YOU DO NOT AGREE, DO NOT PROCEED WITH ANY PURCHASE.
         </p>
       </div>
 
@@ -61,7 +62,7 @@ export default function TermsPage() {
             Maximum Financial Cap on Damages
           </div>
           <p className="mt-3 text-xs leading-relaxed text-[#181513]/85 sm:text-sm">
-            TO THE MAXIMUM EXTENT PERMITTED UNDER APPLICABLE INDIAN LAW, UNDER NO CIRCUMSTANCES SHALL SEETHAPAATI HEIRLOOM FOODS PRIVATE LIMITED, ITS FOUNDERS, DIRECTORS, SHAREHOLDERS, EMPLOYEES, AFFILIATES, AGENTS, OR SUPPLIERS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, PUNITIVE, OR EXEMPLARY DAMAGES (INCLUDING LOSS OF REVENUE, LOSS OF PROFITS, GOODWILL, REPUTATIONAL DAMAGE, LOSS OF DATA, OR EXPENSES OF ALTERNATIVE GOODS PROCUREMENT), HOWEVER CAUSED AND UNDER ANY THEORY OF LIABILITY (WHETHER IN CONTRACT, TORT, STRICT LIABILITY, NEGLIGENCE, STATUTORY WARRANTY, CONSUMER PROTECTION CLAIM, OR OTHERWISE), EVEN IF INFORMED OF THE POSSIBILITY OF SUCH DAMAGES.
+            TO THE MAXIMUM EXTENT PERMITTED UNDER APPLICABLE INDIAN LAW, UNDER NO CIRCUMSTANCES SHALL {BUSINESS_INFO.legalEntityName.toUpperCase()}, ITS FOUNDERS, DIRECTORS, SHAREHOLDERS, EMPLOYEES, AFFILIATES, AGENTS, OR SUPPLIERS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, PUNITIVE, OR EXEMPLARY DAMAGES (INCLUDING LOSS OF REVENUE, LOSS OF PROFITS, GOODWILL, REPUTATIONAL DAMAGE, LOSS OF DATA, OR EXPENSES OF ALTERNATIVE GOODS PROCUREMENT), HOWEVER CAUSED AND UNDER ANY THEORY OF LIABILITY (WHETHER IN CONTRACT, TORT, STRICT LIABILITY, NEGLIGENCE, STATUTORY WARRANTY, CONSUMER PROTECTION CLAIM, OR OTHERWISE), EVEN IF INFORMED OF THE POSSIBILITY OF SUCH DAMAGES.
           </p>
           <p className="mt-3 text-xs leading-relaxed text-[#181513]/85 sm:text-sm">
             <strong>ABSOLUTE MAXIMUM AGGREGATE RECOVERY:</strong> IN ALL CIRCUMSTANCES, SEETHAPAATI&apos;S TOTAL AGGREGATE FINANCIAL LIABILITY FOR ANY AND ALL CLAIMS, DISPUTES, INJURIES, OR LOSSES ARISING OUT OF OR RELATING TO THE PRODUCTS, PACKAGING, SERVICES, OR THESE TERMS SHALL BE STRICTLY AND ABSOLUTELY CAPPED AT <strong>THE ACTUAL AMOUNT PAID BY THE CUSTOMER FOR THE SPECIFIC ORDER GIVING RISE TO THE CLAIM</strong> (OR ₹500, WHICHEVER IS LOWER).
@@ -127,7 +128,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-serif text-2xl text-[#181513]">7. Customer Indemnification</h2>
           <p className="mt-2 text-xs leading-relaxed sm:text-sm">
-            You agree to defend, indemnify, and hold harmless Seethapaati Heirloom Foods Private Limited, its directors, officers, employees, and licensors from and against any and all claims, demands, liabilities, damages, penalties, fines, costs, and expenses (including reasonable attorney and litigation fees) arising out of or related to:
+            You agree to defend, indemnify, and hold harmless {BUSINESS_INFO.legalEntityName}, its directors, officers, employees, and licensors from and against any and all claims, demands, liabilities, damages, penalties, fines, costs, and expenses (including reasonable attorney and litigation fees) arising out of or related to:
           </p>
           <ul className="mt-2 list-disc list-inside space-y-1 text-xs text-[#181513]/75">
             <li>Your breach of any provision of these Terms or applicable laws;</li>
@@ -141,7 +142,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-serif text-2xl text-[#181513]">8. Intellectual Property &amp; Brand Protection</h2>
           <p className="mt-2 text-xs leading-relaxed sm:text-sm">
-            The name &ldquo;SEETHAPAATI&rdquo;, the logo, branding elements, bespoke packaging design, product formulations, recipe copy, digital artwork, and typography are protected trademarks and intellectual property of Seethapaati Heirloom Foods Private Limited under the Trade Marks Act, 1999 and the Copyright Act, 1957. Any unauthorized reproduction, scraping, deep-linking, reverse engineering, or commercial use is strictly prohibited and subject to civil injunctions and criminal prosecution.
+            The name &ldquo;SEETHAPAATI&rdquo;, the logo, branding elements, bespoke packaging design, product formulations, recipe copy, digital artwork, and typography are protected trademarks and intellectual property of {BUSINESS_INFO.legalEntityName} under the Trade Marks Act, 1999 and the Copyright Act, 1957. Any unauthorized reproduction, scraping, deep-linking, reverse engineering, or commercial use is strictly prohibited and subject to civil injunctions and criminal prosecution.
           </p>
         </section>
 
@@ -150,7 +151,7 @@ export default function TermsPage() {
           <h2 className="font-serif text-2xl text-[#181513]">9. Mandatory 2-Tier Dispute Resolution &amp; Chennai Arbitration</h2>
           <div className="mt-3 space-y-3 text-xs leading-relaxed text-[#181513]/85 sm:text-sm">
             <p>
-              <strong>Tier 1 — Mandatory Informal Conciliation:</strong> Prior to initiating any formal legal or administrative proceeding, you agree to submit a written statement of dispute to our Grievance Redressal Desk at <code>legal@seethapaati.com</code>. The parties agree to engage in good-faith negotiations for thirty (30) business days.
+              <strong>Tier 1 — Mandatory Informal Conciliation:</strong> Prior to initiating any formal legal or administrative proceeding, you agree to submit a written statement of dispute to our Grievance Redressal Desk at <code>{BUSINESS_INFO.legalEmail}</code>. The parties agree to engage in good-faith negotiations for thirty (30) business days.
             </p>
             <p>
               <strong>Tier 2 — Sole &amp; Exclusive Binding Arbitration:</strong> If the dispute is not resolved during the conciliation period, it shall be finally resolved by binding arbitration conducted under the provisions of the <strong>Arbitration and Conciliation Act, 1996</strong> (as amended). The arbitration shall be conducted by a sole arbitrator mutually agreed upon or appointed in accordance with the Act. The seat and venue of arbitration shall be <strong>Chennai, Tamil Nadu, India</strong>. The language of arbitration shall be English. The arbitrator&apos;s award shall be final, conclusive, and binding on both parties.
@@ -171,13 +172,13 @@ export default function TermsPage() {
             In compliance with the <strong>Consumer Protection (E-Commerce) Rules, 2020</strong> and Rule 3(2) of the <strong>Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021</strong>, the designated Nodal and Grievance Officer is:
           </p>
           <div className="mt-4 border border-[#E3DFD7] bg-white/70 p-5 text-xs text-[#181513]">
-            <p><strong>Grievance Officer:</strong> Visshal Anand, Director of Operations</p>
-            <p className="mt-1"><strong>Company:</strong> Seethapaati Heirloom Foods Private Limited</p>
-            <p className="mt-1"><strong>Corporate Identification Number (CIN):</strong> U10799TN2026PTC158941</p>
-            <p className="mt-1"><strong>FSSAI Registration / License:</strong> 12426999000142</p>
+            <p><strong>Grievance Officer:</strong> {BUSINESS_INFO.grievanceOfficerName}</p>
+            <p className="mt-1"><strong>Company:</strong> {BUSINESS_INFO.legalEntityName}</p>
+            {BUSINESS_INFO.registrationNumber ? <p className="mt-1"><strong>{BUSINESS_INFO.registrationLabel}:</strong> {BUSINESS_INFO.registrationNumber}</p> : null}
+            <p className="mt-1"><strong>FSSAI Registration / License:</strong> {BUSINESS_INFO.fssaiLicenseNumber}</p>
             <p className="mt-1"><strong>Registered Address:</strong> 14/2 South Mada Street, Mylapore, Chennai, Tamil Nadu 600004, India</p>
-            <p className="mt-1"><strong>Email:</strong> grievance@seethapaati.com / legal@seethapaati.com</p>
-            <p className="mt-1"><strong>Helpline / Phone:</strong> +91 (044) 2498 1947 / +91 98400 12345</p>
+            <p className="mt-1"><strong>Email:</strong> {BUSINESS_INFO.grievanceEmail} / {BUSINESS_INFO.legalEmail}</p>
+            <p className="mt-1"><strong>Helpline / Phone:</strong> {BUSINESS_INFO.supportPhoneDisplay}</p>
             <p className="mt-2 text-[11px] text-[#181513]/60 italic">
               Statutory timeline: Acknowledgement of consumer grievance within 48 hours; resolution within 1 month from date of receipt.
             </p>
