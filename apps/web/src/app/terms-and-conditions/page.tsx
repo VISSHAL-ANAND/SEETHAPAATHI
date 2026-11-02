@@ -176,7 +176,7 @@ export default function TermsPage() {
             <p className="mt-1"><strong>Company:</strong> {BUSINESS_INFO.legalEntityName}</p>
             {BUSINESS_INFO.registrationNumber ? <p className="mt-1"><strong>{BUSINESS_INFO.registrationLabel}:</strong> {BUSINESS_INFO.registrationNumber}</p> : null}
             <p className="mt-1"><strong>FSSAI Registration / License:</strong> {BUSINESS_INFO.fssaiLicenseNumber}</p>
-            <p className="mt-1"><strong>Registered Address:</strong> 14/2 South Mada Street, Mylapore, Chennai, Tamil Nadu 600004, India</p>
+            <p className="mt-1"><strong>Registered Address:</strong> {BUSINESS_INFO.registeredOffice}</p>
             <p className="mt-1"><strong>Email:</strong> {BUSINESS_INFO.grievanceEmail} / {BUSINESS_INFO.legalEmail}</p>
             <p className="mt-1"><strong>Helpline / Phone:</strong> {BUSINESS_INFO.supportPhoneDisplay}</p>
             <p className="mt-2 text-[11px] text-[#181513]/60 italic">
